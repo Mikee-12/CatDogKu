@@ -448,7 +448,7 @@ if(isset($_POST['login'])){
       </form>
       <p class="card-footer">
   Forgot password? <a href="cust_resetpw.php">Reset here</a>
-  &nbsp;<br>&nbsp;
+  <br>
   Don't have an account? <a href="cust_register.php">Register here</a>
 </p>
     </div>

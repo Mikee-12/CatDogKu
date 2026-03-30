@@ -1,3 +1,11 @@
+<?php
+session_start();
+
+if(!isset($_SESSION['customer_id'])){
+    header("Location: cust_login.php");
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
@@ -108,7 +116,7 @@
     .nav-links a.active { color: var(--accent); }
     .nav-links a:hover::after,
     .nav-links a.active::after { width: 100%; }
-    
+
     .nav-spacer { flex: 1; }
 
     .theme-toggle {
