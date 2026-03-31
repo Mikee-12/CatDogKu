@@ -538,9 +538,6 @@ $join_date = $tanggal_daftar ? date("d M Y", strtotime($tanggal_daftar)) : '-';
       </div><!-- /.profile-layout -->
     </div><!-- /.profile-content -->
 
-    <footer>
-      &copy; 2025 CatDogKu. All rights reserved.
-    </footer>
   </div><!-- /.page-hero -->
 
   <script>
