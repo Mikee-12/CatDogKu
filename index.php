@@ -502,13 +502,14 @@ if(!isset($_SESSION['customer_id'])){
       <img src="assets/logodm.png" alt="CatDogKu" class="logo-dark" />
     </a>
 
-    <ul class="nav-links">
-      <li><a href="#home" class="active">Home</a></li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#service">Service</a></li>
-      <li><a href="#contact">Contact</a></li>
-      <li><a href="reserve.html">Reserve</a></li>
-    </ul>
+<ul class="nav-links">
+  <li><a href="#home" class="active">Home</a></li>
+  <li><a href="#about">About</a></li>
+  <li><a href="#service">Service</a></li>
+  <li><a href="reserve.html">Reserve</a></li>
+  <li><a href="cust_profile.php">Profile</a></li>
+  <li><a href="#contact">Contact</a></li>
+</ul>
 
     <div class="nav-spacer"></div>
 
