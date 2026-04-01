@@ -13,10 +13,10 @@ if(isset($_POST['register'])){
     $no_telepon = $_POST['no_telepon'];
     $alamat = $_POST['alamat'];
 
-    $query = "INSERT INTO customer 
-    (nama_depan,nama_belakang,email,password,no_telepon,alamat,tanggal_daftar)
+    $query = "INSERT INTO user 
+    (nama_depan,nama_belakang,email,password,no_telepon,alamat)
     VALUES
-    ('$nama_depan','$nama_belakang','$email','$password','$no_telepon','$alamat',NOW())";
+    ('$nama_depan','$nama_belakang','$email','$password','$no_telepon','$alamat')";
 
 
     $result = mysqli_query($conn,$query);
@@ -35,6 +35,7 @@ if(isset($_POST['register'])){
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Register — CatDogKu</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />

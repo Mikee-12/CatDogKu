@@ -13,11 +13,11 @@
         } else {
 
             // Verify email + phone match
-            $check = mysqli_query($conn, "SELECT * FROM customer WHERE email='$email' AND no_telepon='$no_telepon'");
+            $check = mysqli_query($conn, "SELECT * FROM user WHERE email='$email' AND no_telepon='$no_telepon'");
 
             if(mysqli_num_rows($check) > 0){
                 $hashed = password_hash($new_password, PASSWORD_DEFAULT);
-                $update = mysqli_query($conn, "UPDATE customer SET password='$hashed' WHERE email='$email' AND no_telepon='$no_telepon'");
+                $update = mysqli_query($conn, "UPDATE user SET password='$hashed' WHERE email='$email' AND no_telepon='$no_telepon'");
 
                 if($update){
                     echo "<script>alert('Password reset successful! Please log in.'); window.location='cust_login.php';</script>";
@@ -39,6 +39,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reset Password — CatDogKu</title>
+    <link rel="icon" type="image/png" href="assets/icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />

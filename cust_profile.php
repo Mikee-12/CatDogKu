@@ -8,17 +8,17 @@ if(!isset($_SESSION['customer_id'])){
 }
 
 $id = $_SESSION['customer_id'];
-$stmt = $conn->prepare("SELECT nama_depan, nama_belakang, email, no_telepon, alamat, tanggal_daftar FROM customer WHERE id_pelanggan = ?");
+$stmt = $conn->prepare("SELECT nama_depan, nama_belakang, email, no_telepon, alamat, created_at FROM user WHERE id_user = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
-$stmt->bind_result($nama_depan, $nama_belakang, $email, $no_telepon, $alamat, $tanggal_daftar);
+$stmt->bind_result($nama_depan, $nama_belakang, $email, $no_telepon, $alamat, $created_at);
 $stmt->fetch();
 $stmt->close();
 $conn->close();
 
 $initials = strtoupper(substr($nama_depan, 0, 1) . substr($nama_belakang, 0, 1));
 $full_name = htmlspecialchars($nama_depan . ' ' . $nama_belakang);
-$join_date = $tanggal_daftar ? date("d M Y", strtotime($tanggal_daftar)) : '-';
+$join_date = $created_at ? date("d M Y", strtotime($created_at)) : '-';
 ?>
 <!DOCTYPE html>
 <html lang="id" data-theme="light">
@@ -26,6 +26,7 @@ $join_date = $tanggal_daftar ? date("d M Y", strtotime($tanggal_daftar)) : '-';
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Profile — CatDogKu</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />

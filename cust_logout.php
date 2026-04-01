@@ -7,8 +7,8 @@ if(isset($_POST['logout'])){
     $no_telepon = $_POST['no_telepon'];
     $password   = $_POST['password'];
 
-    // Cari customer berdasarkan email dan no_telepon
-    $query  = "SELECT * FROM customer WHERE email='$email' AND no_telepon='$no_telepon' LIMIT 1";
+    // Cari user berdasarkan email dan no_telepon
+    $query  = "SELECT * FROM user WHERE email='$email' AND no_telepon='$no_telepon' LIMIT 1";
     $result = mysqli_query($conn, $query);
 
     if($result && mysqli_num_rows($result) > 0){
@@ -40,6 +40,7 @@ if(isset($_POST['logout'])){
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Logout — CatDogKu</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />

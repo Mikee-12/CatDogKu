@@ -6,13 +6,13 @@ if(isset($_POST['login'])){
     $email    = $_POST['email'];
     $password = $_POST['password'];
 
-    $query  = "SELECT * FROM customer WHERE email='$email'";
+    $query  = "SELECT * FROM user WHERE email='$email'";
     $result = mysqli_query($conn, $query);
     $user   = mysqli_fetch_assoc($result);
 
     if($user && password_verify($password, $user['password'])){
         session_start();
-        $_SESSION['customer_id']   = $user['id_pelanggan'];
+        $_SESSION['customer_id']   = $user['id_user'];
         $_SESSION['customer_nama'] = $user['nama_depan'];
         echo "<script>window.location='index.php';</script>";
    }else{
@@ -27,6 +27,7 @@ if(isset($_POST['login'])){
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login — CatDogKu</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -62,7 +63,7 @@ if(isset($_POST['login'])){
 
     /* ─── Reset ─── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; } 
     body {
       font-family: 'DM Sans', sans-serif;
       background: var(--bg);

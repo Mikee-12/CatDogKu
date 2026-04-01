@@ -10,7 +10,7 @@ if(!isset($_SESSION['customer_id'])){
 $id = $_SESSION['customer_id'];
 
 // ── Fetch customer info ──
-$stmt = $conn->prepare("SELECT nama_depan, nama_belakang, email, no_telepon FROM customer WHERE id_pelanggan = ?");
+$stmt = $conn->prepare("SELECT nama_depan, nama_belakang, email, no_telepon FROM user WHERE id_user = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $stmt->bind_result($nama_depan, $nama_belakang, $email, $no_telepon);
@@ -32,8 +32,8 @@ if(isset($_POST['add_pet'])){
     $berat_kg      = (float)$_POST['berat_kg'];
     $catatan_medis = $conn->real_escape_string($_POST['catatan_medis']);
 
-    $q = "INSERT INTO hewan_peliharaan (id_pelanggan, nama_hewan, id_jenis, id_ras, tanggal_lahir, berat_kg, catatan_medis)
-          VALUES ('$id','$nama_hewan','$id_jenis','$id_ras','$tanggal_lahir','$berat_kg','$catatan_medis')";
+    $q = "INSERT INTO pets (id_user, nama_pet, id_breed, tgl_lahir, berat_kg, catatan_medis)
+          VALUES ('$id','$nama_hewan','$id_ras','$tanggal_lahir','$berat_kg','$catatan_medis')";
 
     if($conn->query($q)){
         $success_msg = "Pet berhasil ditambahkan!";
@@ -42,16 +42,42 @@ if(isset($_POST['add_pet'])){
     }
 }
 
+// ── Handle Edit / Delete Pet ──
+if(isset($_POST['edit_pet']) || isset($_POST['delete_pet'])){
+    $pet_id = isset($_POST['pet_id']) ? (int)$_POST['pet_id'] : 0;
+    if($pet_id > 0){
+        if(isset($_POST['delete_pet'])){
+            $q = "DELETE FROM pets WHERE id_pet = '$pet_id' AND id_user = '$id'";
+            if($conn->query($q)){
+                $success_msg = "Pet berhasil dihapus.";
+            } else {
+                $error_msg = "Gagal menghapus pet. Coba lagi.";
+            }
+        } else {
+            $berat_kg      = isset($_POST['berat_kg']) ? (float)$_POST['berat_kg'] : 0;
+            $catatan_medis = isset($_POST['catatan_medis']) ? $conn->real_escape_string($_POST['catatan_medis']) : '';
+            $q = "UPDATE pets SET berat_kg = '$berat_kg', catatan_medis = '$catatan_medis' WHERE id_pet = '$pet_id' AND id_user = '$id'";
+            if($conn->query($q)){
+                $success_msg = "Pet data saved successfully.";
+            } else {
+                $error_msg = "Failed to save changes. Please try again..";
+            }
+        }
+    } else {
+        $error_msg = "Invalid pet data.";
+    }
+}
+
 // ── Fetch pets ──
 $pets_query = "
-    SELECT h.id_hewan, h.nama_hewan, j.nama_jenis, r.nama_ras, h.tanggal_lahir, h.berat_kg, h.catatan_medis
-    FROM hewan_peliharaan h
-    LEFT JOIN jenis_hewan j ON h.id_jenis = j.id_jenis
-    LEFT JOIN ras_hewan   r ON h.id_ras   = r.id_ras
-    WHERE h.id_pelanggan = '$id'
+    SELECT h.id_pet AS id_hewan, h.nama_pet AS nama_hewan, s.nama_species AS nama_jenis, b.nama_breed AS nama_ras, h.tgl_lahir AS tanggal_lahir, h.berat_kg, h.catatan_medis
+    FROM pets h
+    LEFT JOIN breeds b ON h.id_breed = b.id_breed
+    LEFT JOIN species s ON b.id_species = s.id_species
+    WHERE h.id_user = '$id'
     ORDER BY 
-        CASE WHEN r.nama_ras = 'Other' THEN 1 ELSE 0 END,
-        h.created_at ASC
+        CASE WHEN b.nama_breed = 'Other' THEN 1 ELSE 0 END,
+        h.id_pet ASC
 ";
 $pets_result = $conn->query($pets_query);
 $pets = [];
@@ -61,12 +87,12 @@ if($pets_result){
 
 // ── Fetch jenis for dropdown ──
 $jenis_list = [];
-$jr = $conn->query("SELECT id_jenis, nama_jenis FROM jenis_hewan ORDER BY nama_jenis");
+$jr = $conn->query("SELECT id_species AS id_jenis, nama_species AS nama_jenis FROM species ORDER BY nama_species");
 if($jr) while($row = $jr->fetch_assoc()) $jenis_list[] = $row;
 
 // ── Fetch ALL ras with jenis mapping (for JS filtering) ──
 $ras_all = [];
-$rr = $conn->query("SELECT id_ras, id_jenis, nama_ras FROM ras_hewan ORDER BY CASE WHEN nama_ras = 'Other' THEN 1 ELSE 0 END, nama_ras ASC");
+$rr = $conn->query("SELECT id_breed AS id_ras, id_species AS id_jenis, nama_breed AS nama_ras FROM breeds ORDER BY CASE WHEN nama_breed = 'Other' THEN 1 ELSE 0 END, nama_breed ASC");
 if($rr) while($row = $rr->fetch_assoc()) $ras_all[] = $row;
 
 $conn->close();
@@ -76,7 +102,8 @@ $conn->close();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Pets — CatDogKu</title>
+  <title>My Pet — CatDogKu</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -400,6 +427,7 @@ $conn->close();
       border: 1px solid var(--border);
       background: var(--bg2);
       margin-bottom: 12px;
+      cursor: pointer;
       transition: background var(--transition), border-color var(--transition), transform .2s, box-shadow .2s;
       animation: fadeUp .4s both;
     }
@@ -533,6 +561,77 @@ $conn->close();
       box-shadow: 0 0 0 3px rgba(76,175,80,.12);
     }
     .form-group textarea { resize: none; min-height: 72px; }
+
+    .edit-modal-body {
+      padding: 22px 28px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .edit-pet-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+    .edit-pet-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 1.35rem;
+      background: var(--accent-lt);
+      color: var(--accent-dk);
+      flex-shrink: 0;
+    }
+    .edit-pet-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .edit-pet-subtitle {
+      margin: 4px 0 0;
+      color: var(--text-sub);
+      font-size: .92rem;
+    }
+    .edit-modal-form { display: flex; flex-direction: column; gap: 14px; }
+    .edit-modal-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .btn-save,
+    .btn-delete {
+      min-width: 140px;
+      border: none;
+      border-radius: var(--radius);
+      padding: 13px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background var(--transition), transform .2s, box-shadow .2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-save {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(76,175,80,.32);
+    }
+    .btn-save:hover { background: var(--accent-dk); transform: translateY(-1px); box-shadow: 0 10px 28px rgba(76,175,80,.42); }
+    .btn-delete {
+      background: rgba(229,57,53,.08);
+      color: #b71c1c;
+      border: 1px solid rgba(229,57,53,.2);
+    }
+    .btn-delete:hover { background: rgba(229,57,53,.14); transform: translateY(-1px); }
+    .btn-delete svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
 
     .select-wrap { position: relative; }
     .select-wrap::after {
@@ -690,7 +789,15 @@ $conn->close();
                   else $age_str = $diff->d . ' days old';
               }
             ?>
-            <div class="pet-item" style="animation-delay: <?= $i * .06 ?>s;">
+            <div class="pet-item"
+     style="animation-delay: <?= $i * .06 ?>s;"
+     data-id="<?= $pet['id_hewan'] ?>"
+     data-name="<?= htmlspecialchars($pet['nama_hewan']) ?>"
+     data-jenis="<?= htmlspecialchars($pet['nama_jenis'] ?? '') ?>"
+     data-ras="<?= htmlspecialchars($pet['nama_ras'] ?? '') ?>"
+     data-berat="<?= $pet['berat_kg'] ?>"
+     data-catatan="<?= htmlspecialchars($pet['catatan_medis'] ?? '') ?>"
+     data-emoji="<?= $emoji ?>">
               <div class="pet-icon"><?= $emoji ?></div>
               <div class="pet-info">
                 <p class="pet-name"><?= htmlspecialchars($pet['nama_hewan']) ?></p>
@@ -783,6 +890,61 @@ $conn->close();
       </form>
     </div>
 
+
+  </div>
+</div>
+
+    <!-- ══════════════ EDIT PET MODAL ══════════════ -->
+<div class="modal-backdrop" id="editModalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+
+    <div class="modal-header">
+      <div>
+        <p class="modal-tag">Edit Pet</p>
+      </div>
+      <button class="modal-close" id="closeEditModal" aria-label="Close">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="edit-modal-body">
+
+      <div class="edit-pet-header">
+        <div class="edit-pet-icon" id="editPetIcon">🐾</div>
+        <div>
+          <p class="edit-pet-title" id="editPetName">—</p>
+          <p class="edit-pet-subtitle" id="editPetMeta">—</p>
+        </div>
+      </div>
+
+      <form class="edit-modal-form" method="POST">
+        <input type="hidden" name="pet_id" id="editPetId" />
+
+        <div class="form-group">
+          <label for="editBerat">Weight (kg)</label>
+          <input type="number" id="editBerat" name="berat_kg"
+                 placeholder="Weight" step="0.01" min="0" max="999" />
+        </div>
+
+        <div class="form-group">
+          <label for="editCatatan">Medical Records</label>
+          <textarea id="editCatatan" name="catatan_medis"
+                    placeholder="Allergies, vaccine history, special conditions..."></textarea>
+        </div>
+
+        <div class="edit-modal-footer">
+          <button type="submit" name="edit_pet" class="btn-save">
+            Save Changes
+          </button>
+          <button type="submit" name="delete_pet" class="btn-delete"
+                  onclick="return confirm('Delete this pet?')">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Delete
+          </button>
+        </div>
+      </form>
+    </div>
+
   </div>
 </div>
 
@@ -833,6 +995,25 @@ $conn->close();
         rasSelect.appendChild(opt);
       });
   });
+  // ── Edit Pet Modal ──
+const editBackdrop = document.getElementById('editModalBackdrop');
+const closeEditBtn = document.getElementById('closeEditModal');
+
+document.querySelectorAll('.pet-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.getElementById('editPetId').value      = this.dataset.id;
+    document.getElementById('editPetName').textContent = this.dataset.name;
+    document.getElementById('editPetMeta').textContent = this.dataset.jenis + ' · ' + this.dataset.ras;
+    document.getElementById('editPetIcon').textContent  = this.dataset.emoji;
+    document.getElementById('editBerat').value      = this.dataset.berat;
+    document.getElementById('editCatatan').value    = this.dataset.catatan;
+    editBackdrop.classList.add('open');
+  });
+});
+
+closeEditBtn.addEventListener('click', () => editBackdrop.classList.remove('open'));
+editBackdrop.addEventListener('click', e => { if(e.target === editBackdrop) editBackdrop.classList.remove('open'); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') editBackdrop.classList.remove('open'); });
 
   // ── Auto-open modal if there was an error ──
   <?php if($error_msg): ?>

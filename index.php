@@ -12,6 +12,7 @@ if(!isset($_SESSION['customer_id'])){
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CatDogKu — Care Your Pets With Love</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -506,7 +507,7 @@ if(!isset($_SESSION['customer_id'])){
   <li><a href="#home" class="active">Home</a></li>
   <li><a href="#about">About</a></li>
   <li><a href="#service">Service</a></li>
-  <li><a href="reserve.html">Reserve</a></li>
+  <li><a href="reserve.php">Reserve</a></li>
   <li><a href="cust_profile.php">Profile</a></li>
   <li><a href="#contact">Contact</a></li>
 </ul>
