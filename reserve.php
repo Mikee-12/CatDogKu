@@ -31,11 +31,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_staff') {
     $day_of_week = $day_map[$english_day] ?? $english_day;
     $time_check  = date('H:i:s', strtotime($waktu_mulai));
 
-    $staff_result = mysqli_query($conn, "
-        SELECT st.id_staff AS id_staf, st.nama_staff AS nama_staf
-        FROM staffs st JOIN staff_schedules ss ON st.id_staff = ss.id_staff
-        WHERE st.is_active = 1 AND ss.hari = '$day_of_week'
-          AND '$time_check' BETWEEN ss.jam_mulai AND ss.jam_selesai LIMIT 1");
+$staff_result = mysqli_query($conn, "
+    SELECT st.id_staff AS id_staf, st.nama_staff AS nama_staf
+    FROM staffs st
+    JOIN staff_schedules ss ON st.id_staff = ss.id_staff
+    JOIN services sv ON sv.id_specialization = st.id_specialization
+    WHERE st.is_active = 1
+      AND sv.id_service = $service_id
+      AND ss.hari = '$day_of_week'
+      AND '$time_check' BETWEEN ss.jam_mulai AND ss.jam_selesai
+    ORDER BY RAND()
+    LIMIT 1");
     $staff = mysqli_fetch_assoc($staff_result);
 
     $dur_row   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT durasi_estimasi FROM services WHERE id_service = $service_id"));
