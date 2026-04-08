@@ -687,7 +687,10 @@ if (isset($_POST['reserve'])) {
 
         <!-- ── RIGHT: Service picker (3×3 scrollable) ── -->
         <div class="reserve-right">
-          <p class="service-label">Service</p>
+  <div style="display:flex; align-items:center; justify-content:space-between;">
+    <p class="service-label">Service</p>
+    <a href="detail_reserve.php" class="card-label" style="margin-bottom:0; cursor:pointer;">All Reserve</a>
+  </div>
           <!-- Only this div scrolls -->
           <div class="service-scroll">
             <div class="service-picker">
@@ -726,7 +729,7 @@ if (isset($_POST['reserve'])) {
     <p class="popup-label">Reservation Confirmed</p>
     <h2 class="popup-title">Thank you for trusting CatDogKu!</h2>
     <p class="popup-body">Your reservation has been placed successfully. Our team will take great care of your furry friend. You'll receive a confirmation shortly.</p>
-    <button class="btn-secondary" onclick="window.location='index.php'">Back to Home</button>
+    <button class="btn-secondary" onclick="window.location='detail_reserve.php'">View My Reservations</button>
   </div>
 </div>
 
@@ -815,7 +818,7 @@ if (isset($_POST['reserve'])) {
     e.preventDefault();
     btnText.textContent = 'Reserving...';
     btnSpinner.style.display = 'block';
-    btnArrow.style.display   = 'none';
+    if (btnArrow) btnArrow.style.display = 'none';
     reserveBtn.disabled = true;
 
     const formData = new FormData(form);

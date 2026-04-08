@@ -437,7 +437,6 @@ if(isset($_POST['logout'])){
 
       <div class="card-header">
         <p class="card-label">LogOut Confirmation</p>
-        <h1 class="card-title">Goodbye!</h1>
         <p class="card-subtitle">Verify your identity before logging out of your account.</p>
       </div>
 
