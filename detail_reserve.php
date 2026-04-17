@@ -45,10 +45,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $metode_esc  = mysqli_real_escape_string($conn, $metode_bayar);
     $bukti_esc   = $bukti_path ? "'" . mysqli_real_escape_string($conn, $bukti_path) . "'" : "NULL";
 
+    // Calculate total_bayar from reservation_details subtotal
+    $total_bayar = 0;
+    $query_total = "SELECT SUM(subtotal) AS total FROM reservation_details WHERE id_reservation = $id_reservation";
+    $result_total = mysqli_query($conn, $query_total);
+    if ($result_total && $row_total = mysqli_fetch_assoc($result_total)) {
+        $total_bayar = $row_total['total'] ?? 0;
+    }
+
     if (mysqli_num_rows($check) > 0) {
-        $sql = "UPDATE payments SET metode_bayar = '$metode_esc', bukti_bayar = $bukti_esc, status_bayar = 'partial', tgl_bayar = NOW() WHERE id_reservation = $id_reservation";
+        $sql = "UPDATE payments SET metode_bayar = '$metode_esc', bukti_bayar = $bukti_esc, status_bayar = 'partial', tgl_bayar = NOW(), total_bayar = $total_bayar WHERE id_reservation = $id_reservation";
     } else {
-        $sql = "INSERT INTO payments (id_reservation, status_bayar, metode_bayar, bukti_bayar, tgl_bayar) VALUES ($id_reservation, 'partial', '$metode_esc', $bukti_esc, NOW())";
+        $sql = "INSERT INTO payments (id_reservation, status_bayar, metode_bayar, bukti_bayar, tgl_bayar, total_bayar) VALUES ($id_reservation, 'partial', '$metode_esc', $bukti_esc, NOW(), $total_bayar)";
     }
 
     if (mysqli_query($conn, $sql)) {
@@ -59,7 +67,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-// Fetch all customer reservations with details
+// Handle cancel reservation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cancel') {
+    $id_reservation = (int)$_POST['id_reservation'];
+
+    // Verify ownership
+    $check_owner = mysqli_query($conn, "SELECT id_reservation FROM reservations WHERE id_reservation = $id_reservation AND id_user = $customer_id LIMIT 1");
+    if (mysqli_num_rows($check_owner) === 0) {
+        echo json_encode(['success' => false, 'message' => 'Reservation not found or access denied.']);
+        exit;
+    }
+
+    // Delete in order: payments, reservation_details, reservations
+    mysqli_query($conn, "DELETE FROM payments WHERE id_reservation = $id_reservation");
+    mysqli_query($conn, "DELETE FROM reservation_details WHERE id_reservation = $id_reservation");
+    mysqli_query($conn, "DELETE FROM reservations WHERE id_reservation = $id_reservation");
+
+    echo json_encode(['success' => true, 'message' => 'Reservation cancelled successfully.']);
+    exit;
+}
+
+// Handle reschedule
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reschedule') {
     $id_reservation = (int)$_POST['id_reservation'];
     $waktu_mulai    = mysqli_real_escape_string($conn, $_POST['waktu_mulai']);
@@ -74,7 +102,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-// Ambil semua reservasi milik customer beserta detail
+// ── AUTO STATUS UPDATE (called from JS polling) ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'auto_update_status') {
+    $now = date('Y-m-d H:i:s');
+
+    // confirmed → in_progress: service has started
+    mysqli_query($conn, "
+        UPDATE reservations
+        SET status = 'in_progress'
+        WHERE id_user = $customer_id
+          AND status = 'confirmed'
+          AND waktu_mulai <= '$now'
+          AND waktu_selesai > '$now'
+    ");
+
+    // confirmed/in_progress → completed: service has ended
+    mysqli_query($conn, "
+        UPDATE reservations
+        SET status = 'completed'
+        WHERE id_user = $customer_id
+          AND status IN ('confirmed', 'in_progress')
+          AND waktu_selesai <= '$now'
+    ");
+
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// ── AUTO STATUS UPDATE ON PAGE LOAD ──
+$now = date('Y-m-d H:i:s');
+
+// confirmed → in_progress
+mysqli_query($conn, "
+    UPDATE reservations
+    SET status = 'in_progress'
+    WHERE id_user = $customer_id
+      AND status = 'confirmed'
+      AND waktu_mulai <= '$now'
+      AND waktu_selesai > '$now'
+");
+
+// confirmed/in_progress → completed
+mysqli_query($conn, "
+    UPDATE reservations
+    SET status = 'completed'
+    WHERE id_user = $customer_id
+      AND status IN ('confirmed', 'in_progress')
+      AND waktu_selesai <= '$now'
+");
+
+// Fetch all customer reservations with details
 $query = "
     SELECT
         r.id_reservation,
@@ -364,7 +441,6 @@ function payBadge($status) {
       transition: background var(--transition), border-color var(--transition), box-shadow .2s;
       cursor: pointer;
     }
-    /* hover: border highlight only, no transform lift */
     .res-card:hover {
       box-shadow: 0 8px 32px rgba(0,0,0,.1);
       border-color: var(--accent);
@@ -372,7 +448,6 @@ function payBadge($status) {
 
     .res-card-body { padding: 20px 24px; }
 
-    /* header row inside card */
     .res-header {
       display: flex; align-items: flex-start;
       justify-content: space-between; gap: 12px; margin-bottom: 16px;
@@ -381,10 +456,8 @@ function payBadge($status) {
     .res-service-name { font-size: 1.05rem; font-weight: 600; color: var(--text); }
     .res-header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
 
-    /* badges row in header */
     .res-badges-row { display: flex; align-items: center; gap: 6px; }
 
-    /* badge */
     .badge {
       display: inline-block; padding: 3px 10px; border-radius: 999px;
       font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
@@ -409,7 +482,20 @@ function payBadge($status) {
     .btn-pay:hover { background: var(--accent-dk); box-shadow: 0 4px 14px rgba(76,175,80,.45); }
     .btn-pay svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2.5; }
 
-    /* info grid inside card */
+    /* ── Cancel button ── */
+    .btn-cancel {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px;
+      background: #ef4444; color: #fff;
+      border-radius: 999px; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: .7rem; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      cursor: pointer; transition: background .2s, box-shadow .2s;
+      box-shadow: 0 3px 10px rgba(239,68,68,.35);
+    }
+    .btn-cancel:hover { background: #dc2626; box-shadow: 0 4px 14px rgba(239,68,68,.45); }
+    .btn-cancel svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2.5; }
+
     .res-info-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -439,13 +525,24 @@ function payBadge($status) {
 
     /* expand panel */
     .res-expand {
-      display: none;
-      padding: 0 24px 20px;
-      border-top: 1px dashed var(--border);
-      animation: fadeUp .3s both;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(.4,0,.2,1);
+      border-top: 1px dashed transparent;
     }
-    .res-expand.open { display: block; }
+    .res-expand.open {
+      max-height: 1000px;
+      border-top-color: var(--border);
+    }
 
+    .res-expand .expand-grid,
+    .res-expand .notes-box {
+      margin: 0 24px;
+    }
+    .res-expand .expand-grid {
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
     .expand-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -488,6 +585,15 @@ function payBadge($status) {
       flex-shrink: 0;
     }
     .res-card.expanded .chevron { transform: rotate(180deg); }
+
+    /* ── Status pulse animation for in_progress ── */
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .55; }
+    }
+    .badge-progress-live {
+      animation: statusPulse 1.8s ease-in-out infinite;
+    }
 
     /* ══════════════════════════════════════════
        PAYMENT MODAL
@@ -534,7 +640,6 @@ function payBadge($status) {
 
     .modal-body { padding: 20px 28px 28px; }
 
-    /* Service info strip */
     .pay-service-strip {
       background: var(--bg2);
       border-radius: 12px;
@@ -547,7 +652,6 @@ function payBadge($status) {
     .pay-service-id   { display: none; }
     .pay-service-price { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
 
-    /* Method select */
     .method-label { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 8px; }
     .method-select {
       width: 100%; padding: 10px 14px; border-radius: 10px;
@@ -560,11 +664,9 @@ function payBadge($status) {
     .method-select:hover, .method-select:focus { border-color: var(--accent); }
     .method-select option { background: var(--surface); color: var(--text); }
 
-    /* Payment instructions panel */
     .pay-instructions { display: none; }
     .pay-instructions.visible { display: block; }
 
-    /* Transfer info */
     .transfer-info {
       background: var(--accent-lt);
       border: 1.5px solid var(--accent);
@@ -576,7 +678,6 @@ function payBadge($status) {
     .transfer-number { font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: .04em; }
     .transfer-name { font-size: .8rem; color: var(--text-sub); margin-top: 2px; }
 
-    /* QRIS image */
     .qris-wrapper {
       text-align: center;
       margin-bottom: 16px;
@@ -589,7 +690,6 @@ function payBadge($status) {
     }
     .qris-caption { font-size: .78rem; color: var(--text-sub); margin-top: 8px; text-align: center; }
 
-    /* Cash info */
     .cash-info {
       background: var(--bg2);
       border-radius: 12px;
@@ -600,7 +700,6 @@ function payBadge($status) {
       line-height: 1.6;
     }
 
-    /* Upload proof */
     .upload-section { margin-top: 4px; }
     .upload-label { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 8px; }
     .upload-drop {
@@ -628,7 +727,6 @@ function payBadge($status) {
     .upload-preview img { max-height: 160px; border-radius: 8px; margin: 0 auto; border: 1.5px solid var(--border); }
     .upload-preview-name { font-size: .75rem; color: var(--text-sub); margin-top: 6px; }
 
-    /* Modal footer */
     .modal-footer {
       padding: 16px 28px 24px;
       border-top: 1px solid var(--border);
@@ -828,20 +926,26 @@ function payBadge($status) {
       $harga    = $res['price_snapshot'] ? 'Rp ' . number_format($res['price_snapshot'], 0, ',', '.') : '—';
       $totalBayar = $res['total_bayar'] ? 'Rp ' . number_format($res['total_bayar'], 0, ',', '.') : '—';
       $statusBayar = $res['status_bayar'] ?? '';
-      // Show Pay button only if not yet paid and reservation is not cancelled
       $showPay = ($statusBayar !== 'paid') && ($status !== 'cancelled');
-      // Show reschedule only for pending/confirmed
+      $showCancel = in_array($status, ['pending', 'confirmed']);
       $canReschedule = in_array($status, ['pending', 'confirmed']);
 
-      // Safely encode data for JS
       $jsService  = htmlspecialchars($res['nama_service'] ?? '', ENT_QUOTES);
       $jsSubtotal = $res['subtotal'] ? number_format($res['subtotal'], 0, ',', '.') : '0';
       $jsId       = (int)$res['id_reservation'];
       $jsMulai    = $res['waktu_mulai'] ? date('Y-m-d\TH:i', strtotime($res['waktu_mulai'])) : '';
       $jsSelesai  = $res['waktu_selesai'] ? date('Y-m-d\TH:i', strtotime($res['waktu_selesai'])) : '';
       $jsDurasi   = (int)($res['durasi_estimasi'] ?? 0);
+
+      // Raw ISO timestamps for JS auto-status logic
+      $rawMulai   = $res['waktu_mulai'] ?? '';
+      $rawSelesai = $res['waktu_selesai'] ?? '';
     ?>
-    <div class="res-card" data-status="<?= htmlspecialchars($status) ?>"
+    <div class="res-card"
+         data-status="<?= htmlspecialchars($status) ?>"
+         data-id="<?= $jsId ?>"
+         data-mulai="<?= htmlspecialchars($rawMulai) ?>"
+         data-selesai="<?= htmlspecialchars($rawSelesai) ?>"
          style="animation-delay: <?= $i * 0.05 ?>s;">
       <div class="res-card-body">
         <!-- Header -->
@@ -852,12 +956,18 @@ function payBadge($status) {
           </div>
           <div class="res-header-right">
             <div class="res-badges-row">
-              <?= statusBadge($status) ?>
+              <span class="status-badge-wrap"><?= statusBadge($status) ?></span>
               <?= payBadge($statusBayar) ?>
               <?php if ($showPay): ?>
               <button type="button" class="btn-pay" onclick="event.stopPropagation(); openPayModal(<?= $jsId ?>, '<?= $jsService ?>', '<?= $jsSubtotal ?>')">
                 <svg viewBox="0 0 24 24"><path d="M2 9h20M2 15h8"/><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
                 Pay
+              </button>
+              <?php endif; ?>
+              <?php if ($showCancel): ?>
+              <button type="button" class="btn-cancel" onclick="event.stopPropagation(); cancelReservation(<?= $jsId ?>)">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Cancel
               </button>
               <?php endif; ?>
               <svg class="chevron" viewBox="0 0 24 24" onclick="event.stopPropagation(); toggleCard(this.closest('.res-card'))"><polyline points="6 9 12 15 18 9"/></svg>
@@ -979,7 +1089,6 @@ function payBadge($status) {
     </div>
 
     <div class="modal-body">
-      <!-- Service strip -->
       <div class="pay-service-strip">
         <div>
           <div class="pay-service-name" id="payServiceName">—</div>
@@ -988,7 +1097,6 @@ function payBadge($status) {
         <div class="pay-service-price" id="payServicePrice">—</div>
       </div>
 
-      <!-- Method selection -->
       <div class="method-label">Payment Method</div>
       <select class="method-select" id="paymentMethodSelect" onchange="selectMethod(this.value)">
         <option value="transfer">Transfer Bank / GoPay</option>
@@ -996,7 +1104,7 @@ function payBadge($status) {
         <option value="cash">Cash On-Site</option>
       </select>
 
-      <!-- Instructions: Transfer -->
+      <!-- Transfer -->
       <div class="pay-instructions visible" id="instr-transfer">
         <div class="transfer-info">
           <div class="transfer-info-label">Transfer to</div>
@@ -1018,7 +1126,7 @@ function payBadge($status) {
         </div>
       </div>
 
-      <!-- Instructions: QRIS -->
+      <!-- QRIS -->
       <div class="pay-instructions" id="instr-qris">
         <div class="qris-wrapper">
           <img src="assets/qris.jpeg" alt="QRIS CatDogKu" />
@@ -1039,7 +1147,7 @@ function payBadge($status) {
         </div>
       </div>
 
-      <!-- Instructions: Cash -->
+      <!-- Cash -->
       <div class="pay-instructions" id="instr-cash">
         <div class="cash-info">
           Cash payments are made on-site at arrival or pet pick-up. Please bring the exact amount due.
@@ -1049,7 +1157,7 @@ function payBadge($status) {
         </div>
       </div>
 
-    </div><!-- /modal-body -->
+    </div>
 
     <div class="modal-footer">
       <button class="btn-cancel-modal" onclick="closePayModal()">Cancel</button>
@@ -1126,7 +1234,7 @@ function payBadge($status) {
 
   /* ── Expand / collapse card ── */
   function toggleCard(card) {
-    const panel = card.querySelector('.res-expand');
+    const panel  = card.querySelector('.res-expand');
     const isOpen = card.classList.contains('expanded');
     document.querySelectorAll('.res-card.expanded').forEach(c => {
       c.classList.remove('expanded');
@@ -1153,6 +1261,114 @@ function payBadge($status) {
     });
   });
 
+  /* ═══════════════════════════════════════════════════════
+     AUTO STATUS UPDATE — runs every 30s + immediately
+  ═══════════════════════════════════════════════════════ */
+
+  // Badge HTML map (mirrors PHP statusBadge)
+  const STATUS_BADGE = {
+    pending:     '<span class="badge badge-pending">Pending</span>',
+    confirmed:   '<span class="badge badge-confirmed">Confirmed</span>',
+    in_progress: '<span class="badge badge-progress badge-progress-live">In Progress</span>',
+    completed:   '<span class="badge badge-completed">Completed</span>',
+    cancelled:   '<span class="badge badge-cancelled">Cancelled</span>',
+  };
+
+  /**
+   * Compute what the status SHOULD be right now based on timestamps.
+   * Rules:
+   *   - pending  → never changed automatically (needs admin confirm first)
+   *   - confirmed → in_progress if now >= mulai && now < selesai
+   *   - confirmed → completed  if now >= selesai
+   *   - in_progress → completed if now >= selesai
+   */
+  function computeStatus(currentStatus, mulaiStr, selesaiStr) {
+    if (!mulaiStr || !selesaiStr) return currentStatus;
+    if (currentStatus === 'pending' || currentStatus === 'cancelled') return currentStatus;
+
+    const now     = new Date();
+    const mulai   = new Date(mulaiStr);
+    const selesai = new Date(selesaiStr);
+
+    if (currentStatus === 'confirmed') {
+      if (now >= selesai)  return 'completed';
+      if (now >= mulai)    return 'in_progress';
+    }
+    if (currentStatus === 'in_progress') {
+      if (now >= selesai)  return 'completed';
+    }
+    return currentStatus;
+  }
+
+  /**
+   * Update the DOM badge and data-status for a single card.
+   * Returns true if status actually changed.
+   */
+  function syncCardStatus(card) {
+    const currentStatus = card.dataset.status;
+    const mulaiStr      = card.dataset.mulai;
+    const selesaiStr    = card.dataset.selesai;
+    const newStatus     = computeStatus(currentStatus, mulaiStr, selesaiStr);
+
+    if (newStatus === currentStatus) return false;
+
+    // Update data-status so filter still works
+    card.dataset.status = newStatus;
+
+    // Update badge in header
+    const badgeWrap = card.querySelector('.status-badge-wrap');
+    if (badgeWrap) badgeWrap.innerHTML = STATUS_BADGE[newStatus] || STATUS_BADGE.pending;
+
+    // Hide Cancel button if status moved past confirmed
+    if (!['pending', 'confirmed'].includes(newStatus)) {
+      const cancelBtn = card.querySelector('.btn-cancel');
+      if (cancelBtn) cancelBtn.style.display = 'none';
+    }
+
+    // Hide reschedule link if status moved past confirmed
+    if (!['pending', 'confirmed'].includes(newStatus)) {
+      const sched = card.querySelector('.schedule-clickable');
+      if (sched) {
+        sched.style.cursor    = 'default';
+        sched.style.textDecoration = 'none';
+        sched.style.color     = 'var(--text)';
+        sched.onclick         = null;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Push status changes to the server (fire-and-forget).
+   * The PHP handler re-runs the same UPDATE queries server-side.
+   */
+  function pushStatusToServer() {
+    const fd = new FormData();
+    fd.append('action', 'auto_update_status');
+    fetch(window.location.href, { method: 'POST', body: fd }).catch(() => {});
+  }
+
+  /**
+   * Run the full sync: update all card DOMs, then push to server if anything changed.
+   */
+  function runAutoStatusSync() {
+    let anyChanged = false;
+    document.querySelectorAll('.res-card').forEach(card => {
+      if (syncCardStatus(card)) anyChanged = true;
+    });
+    if (anyChanged) {
+      pushStatusToServer();
+      // Re-apply active filter so newly-changed cards are shown/hidden correctly
+      const activeFilter = document.querySelector('.filter-btn.active');
+      if (activeFilter) activeFilter.click();
+    }
+  }
+
+  // Run immediately on page load, then every 30 seconds
+  runAutoStatusSync();
+  setInterval(runAutoStatusSync, 30000);
+
   /* ═══════════════════════════════════════
      PAYMENT MODAL
   ═══════════════════════════════════════ */
@@ -1168,14 +1384,11 @@ function payBadge($status) {
     document.getElementById('payServiceName').textContent  = serviceName || '—';
     document.getElementById('payServicePrice').textContent = price ? 'Rp ' + price : '—';
 
-    // Reset dropdown
     document.getElementById('paymentMethodSelect').value = 'transfer';
 
-    // Reset instruction panels
     document.querySelectorAll('.pay-instructions').forEach(p => p.classList.remove('visible'));
     document.getElementById('instr-transfer').classList.add('visible');
 
-    // Reset file inputs
     resetFileUpload();
 
     document.getElementById('payModalBackdrop').classList.add('open');
@@ -1187,7 +1400,6 @@ function payBadge($status) {
     document.body.style.overflow = '';
   }
 
-  // Close on backdrop click
   document.getElementById('payModalBackdrop').addEventListener('click', function(e) {
     if (e.target === this) closePayModal();
   });
@@ -1249,7 +1461,6 @@ function payBadge($status) {
     const previewImg = document.getElementById('previewImg' + suffix);
     const previewName= document.getElementById('previewName' + suffix);
 
-    // Set corresponding input if dropped
     if (type === 'qris') {
       const dt = new DataTransfer(); dt.items.add(file);
       document.getElementById('fileInputQris').files = dt.files;
@@ -1270,7 +1481,6 @@ function payBadge($status) {
   function submitPayment() {
     if (!currentResId) return;
 
-    // Validate file for transfer & qris
     if (currentMethod !== 'cash') {
       const inputId = currentMethod === 'qris' ? 'fileInputQris' : 'fileInput';
       const input   = document.getElementById(inputId);
@@ -1331,13 +1541,10 @@ function payBadge($status) {
       return;
     }
     const startTime = new Date(startInput);
-    const endTime = new Date(startTime.getTime() + currentDuration * 60000);
-    const year = endTime.getFullYear();
-    const month = String(endTime.getMonth() + 1).padStart(2, '0');
-    const day = String(endTime.getDate()).padStart(2, '0');
-    const hours = String(endTime.getHours()).padStart(2, '0');
-    const minutes = String(endTime.getMinutes()).padStart(2, '0');
-    document.getElementById('rsSelesai').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    const endTime   = new Date(startTime.getTime() + currentDuration * 60000);
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('rsSelesai').value =
+      `${endTime.getFullYear()}-${pad(endTime.getMonth()+1)}-${pad(endTime.getDate())}T${pad(endTime.getHours())}:${pad(endTime.getMinutes())}`;
   }
 
   function closeReschedule() {
@@ -1392,6 +1599,27 @@ function payBadge($status) {
     t.className   = 'toast ' + (type || '');
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  /* ── Cancel reservation ── */
+  function cancelReservation(id) {
+    if (!confirm('Are you sure you want to cancel this reservation? This action cannot be undone.')) return;
+
+    const formData = new FormData();
+    formData.append('action', 'cancel');
+    formData.append('id_reservation', id);
+
+    fetch(window.location.href, { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showToast(data.message, 'success');
+          setTimeout(() => location.reload(), 1800);
+        } else {
+          showToast(data.message || 'Failed to cancel reservation.', 'error');
+        }
+      })
+      .catch(() => showToast('A network error occurred.', 'error'));
   }
 
   /* ── Spinner keyframe ── */

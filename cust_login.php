@@ -1,4 +1,5 @@
 <?php
+session_start(); // ✅ Pindah ke PALING ATAS, sebelum apapun
 include "config/koneksi.php";
 
 if(isset($_POST['login'])){
@@ -11,14 +12,24 @@ if(isset($_POST['login'])){
     $user   = mysqli_fetch_assoc($result);
 
     if($user && password_verify($password, $user['password'])){
-        session_start();
+
         $_SESSION['customer_id']   = $user['id_user'];
         $_SESSION['customer_nama'] = $user['nama_depan'];
-        echo "<script>window.location='index.php';</script>";
-   }else{
-    echo "<script>alert('Incorrect email or password');</script>";
+        $_SESSION['customer_role'] = isset($user['role']) ? $user['role'] : 'customer';
+
+        // ✅ Gunakan header() bukan echo script
+        if($email === 'admin@catdogku.com' || $_SESSION['customer_role'] === 'admin'){
+            header('Location: admin_dash.php');
+        } else {
+            header('Location: index.php');
+        }
+        exit(); // ✅ Wajib setelah header redirect
+
+    } else {
+        $error = "Incorrect email or password";
+    }
 }
-}
+
 ?>
 
 <!DOCTYPE html>
@@ -391,7 +402,9 @@ if(isset($_POST['login'])){
       </div>
     </div>
   </nav>
-
+<?php if(isset($error)): ?>
+  <p style="color:red; font-size:.88rem;"><?= htmlspecialchars($error) ?></p>
+<?php endif; ?>
   <!-- ══════════════ BACKGROUND ══════════════ -->
   <div class="bg-image"></div>
   <div class="bg-overlay"></div>
