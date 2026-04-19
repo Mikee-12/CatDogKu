@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once 'config/koneksi.php';
 
 function db_val($conn, $sql) {
@@ -18,23 +19,28 @@ function db_rows($conn, $sql) {
 
 // ── Handle LOGOUT (POST) ──────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_logout'])) {
-    $password_input = $_POST['logout_password'] ?? '';
-
-    // Ambil password admin dari session / DB
-    // Sesuaikan dengan cara autentikasi project kamu
+    $password_input = trim($_POST['logout_password'] ?? '');
     $admin_id = $_SESSION['admin_id'] ?? 0;
-    $row = mysqli_fetch_assoc(mysqli_query($conn, "SELECT password FROM admins WHERE id_admin=$admin_id LIMIT 1"));
+    $row = null;
 
-    $password_ok = $row && password_verify($password_input, $row['password']);
+    if ($admin_id > 0 && $password_input !== '') {
+        $stmt = mysqli_prepare($conn, "SELECT password FROM user WHERE id_user = ? AND role = 'admin' LIMIT 1");
+        mysqli_stmt_bind_param($stmt, "i", $admin_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+    }
 
-    if ($password_ok) {
+    if ($row && password_verify($password_input, $row['password'])) {
         session_destroy();
         header('Location: cust_login.php');
         exit;
     } else {
-        $logout_error = 'Password salah. Silakan coba lagi.';
+        $logout_error = 'Wrong password. Please try again.';
     }
 }
+
 
 // ── Handle ADD STAFF (POST) ───────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_staff'])) {
@@ -174,7 +180,6 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 .sidebar-brand { font-size: 1.25rem; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .sidebar a { color: #aeb6bf; text-decoration: none; padding: 12px 20px; display: flex; align-items: center; border-radius: 10px; margin-bottom: 8px; transition: all .3s ease; font-weight: 500; }
 .sidebar a:hover, .sidebar a.active { background-color: #3498db; color: #fff; transform: translateX(5px); }
-.sidebar a.logout-link { color: #e74c3c; }
 .sidebar a.logout-link:hover { background-color: rgba(231,76,60,.15); color: #e74c3c; transform: translateX(5px); }
 
 /* ── Layout ───────────────────────────────────────────────────────────────── */
@@ -359,9 +364,7 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 
     <div class="mt-4 pt-3 border-top border-secondary">
         <!-- Logout: trigger modal, bukan href langsung -->
-        <a href="#" class="logout-link fw-bold" onclick="openLogoutModal(); return false;">
-            <i class="bi bi-box-arrow-left me-2 fs-5"></i> Logout
-        </a>
+        <a href="#" class="logout-link fw-bold" onclick="openLogoutModal(); return false;"><i class="bi bi-box-arrow-left me-2 fs-5"></i> Logout</a>
     </div>
 </div>
 

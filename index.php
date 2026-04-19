@@ -29,7 +29,7 @@ if(!isset($_SESSION['customer_id'])){
       --accent:     #4caf50;
       --accent-dk:  #388e3c;
       --accent-lt:  #e8f5e9;
-      --nav-h:      72px;
+      --nav-h:      64px;
       --radius:     14px;
       --shadow:     0 4px 24px rgba(0,0,0,.08);
       --transition: .35s cubic-bezier(.4,0,.2,1);
@@ -71,7 +71,7 @@ if(!isset($_SESSION['customer_id'])){
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       box-shadow: var(--shadow);
-      transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+      transition: background var(--transition), border-color var(--transition);
     }
 
     .nav-logo {
@@ -81,28 +81,29 @@ if(!isset($_SESSION['customer_id'])){
       flex-shrink: 0;
     }
     .nav-logo img {
-      height: 42px;
+      height: 40px;
       width: auto;
-      transition: opacity var(--transition);
     }
     [data-theme="light"] .logo-dark  { display: none; }
     [data-theme="dark"]  .logo-light { display: none; }
 
+    /* Desktop nav links */
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 36px;
+      gap: 32px;
       list-style: none;
-      margin-left: 52px;
+      margin-left: 48px;
     }
     .nav-links a {
-      font-size: .92rem;
+      font-size: .88rem;
       font-weight: 500;
       letter-spacing: .04em;
       text-transform: uppercase;
       color: var(--text-sub);
       position: relative;
       transition: color var(--transition);
+      white-space: nowrap;
     }
     .nav-links a::after {
       content: '';
@@ -120,6 +121,7 @@ if(!isset($_SESSION['customer_id'])){
 
     .nav-spacer { flex: 1; }
 
+    /* ─── Theme Toggle ─── */
     .theme-toggle {
       display: flex;
       align-items: center;
@@ -128,24 +130,23 @@ if(!isset($_SESSION['customer_id'])){
       user-select: none;
     }
     .toggle-label {
-      font-size: .78rem;
+      font-size: .75rem;
       font-weight: 600;
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--text-sub);
-      transition: color var(--transition);
       width: 28px;
       text-align: right;
     }
     .toggle-track {
       position: relative;
-      width: 48px;
-      height: 26px;
+      width: 44px;
+      height: 24px;
       background: var(--border);
       border-radius: 999px;
-      transition: background var(--transition), border-color var(--transition);
       border: 2px solid var(--border);
       cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
     }
     .toggle-track.on {
       background: var(--accent);
@@ -154,20 +155,104 @@ if(!isset($_SESSION['customer_id'])){
     .toggle-knob {
       position: absolute;
       top: 2px; left: 2px;
-      width: 18px; height: 18px;
+      width: 16px; height: 16px;
       border-radius: 50%;
       background: #fff;
       box-shadow: 0 1px 4px rgba(0,0,0,.2);
       transition: transform var(--transition);
     }
-    .toggle-track.on .toggle-knob { transform: translateX(22px); }
+    .toggle-track.on .toggle-knob { transform: translateX(20px); }
+
+    /* ─── Hamburger Button ─── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 40px;
+      height: 40px;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+      margin-left: 12px;
+      border-radius: 8px;
+      transition: background .2s;
+    }
+    .hamburger:hover { background: var(--border); }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: transform .3s, opacity .3s, background var(--transition);
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ─── Mobile Menu Drawer ─── */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: var(--nav-h);
+      left: 0; right: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      z-index: 999;
+      padding: 12px 0 20px;
+      transform: translateY(-8px);
+      opacity: 0;
+      transition: transform .3s, opacity .3s, background var(--transition);
+    }
+    .mobile-menu.open {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .mobile-menu ul {
+      list-style: none;
+      padding: 0;
+    }
+    .mobile-menu ul li a {
+      display: block;
+      padding: 14px 24px;
+      font-size: .95rem;
+      font-weight: 500;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      color: var(--text-sub);
+      border-left: 3px solid transparent;
+      transition: color .2s, background .2s, border-color .2s;
+    }
+    .mobile-menu ul li a:hover,
+    .mobile-menu ul li a.active {
+      color: var(--accent);
+      background: var(--accent-lt);
+      border-left-color: var(--accent);
+    }
+    .mobile-menu-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+    .mobile-menu-footer span {
+      font-size: .8rem;
+      color: var(--text-sub);
+      font-weight: 500;
+    }
 
     /* ─── Hero ─── */
     .hero {
       margin-top: var(--nav-h);
       position: relative;
       height: calc(100vh - var(--nav-h));
-      min-height: 520px;
+      min-height: 480px;
       overflow: hidden;
     }
     .hero-img {
@@ -180,11 +265,10 @@ if(!isset($_SESSION['customer_id'])){
       transition: filter var(--transition);
     }
     [data-theme="dark"] .hero-img { filter: brightness(.38); }
-
     .hero-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(100deg, rgba(0,0,0,.58) 38%, transparent 75%);
+      background: linear-gradient(100deg, rgba(0,0,0,.6) 40%, transparent 78%);
     }
     .hero-content {
       position: relative;
@@ -193,50 +277,56 @@ if(!isset($_SESSION['customer_id'])){
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 0 8%;
-      max-width: 680px;
+      padding: 0 6% 0 8%;
+      max-width: 640px;
     }
     .hero-tag {
       display: inline-block;
       padding: 5px 14px;
       border: 1.5px solid var(--accent);
       border-radius: 999px;
-      font-size: .78rem;
+      font-size: .75rem;
       font-weight: 600;
       letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       width: fit-content;
       animation: fadeUp .7s .1s both;
     }
     .hero-title {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-size: clamp(2.4rem, 7vw, 5rem);
       font-weight: 900;
       color: #fff;
       line-height: 1.08;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       animation: fadeUp .7s .22s both;
     }
     .hero-desc {
-      font-size: 1.05rem;
+      font-size: clamp(.92rem, 2.5vw, 1.05rem);
       font-weight: 300;
       color: rgba(255,255,255,.82);
       line-height: 1.75;
-      max-width: 440px;
-      margin-bottom: 36px;
+      max-width: 400px;
+      margin-bottom: 32px;
       animation: fadeUp .7s .34s both;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      animation: fadeUp .7s .46s both;
     }
     .btn-primary {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 14px 34px;
+      padding: 13px 28px;
       background: var(--accent);
       color: #fff;
       border-radius: var(--radius);
-      font-size: .92rem;
+      font-size: .88rem;
       font-weight: 600;
       letter-spacing: .05em;
       text-transform: uppercase;
@@ -245,25 +335,21 @@ if(!isset($_SESSION['customer_id'])){
       width: fit-content;
       transition: background var(--transition), transform .2s, box-shadow .2s;
       box-shadow: 0 6px 20px rgba(76,175,80,.35);
-      animation: fadeUp .7s .46s both;
+      -webkit-tap-highlight-color: transparent;
     }
-    .hero-buttons{
-  display:flex;
-  gap:16px;
-  flex-wrap:wrap;
-}
     .btn-primary:hover {
       background: var(--accent-dk);
       transform: translateY(-2px);
       box-shadow: 0 10px 28px rgba(76,175,80,.45);
     }
+    .btn-primary:active { transform: scale(.97); }
     .btn-arrow { display: inline-block; transition: transform .2s; }
     .btn-primary:hover .btn-arrow { transform: translateX(4px); }
 
     /* ─── Section base ─── */
-    section { padding: 100px 8%; }
+    section { padding: 80px 8%; }
     .section-tag {
-      font-size: .78rem;
+      font-size: .75rem;
       font-weight: 700;
       letter-spacing: .14em;
       text-transform: uppercase;
@@ -272,13 +358,13 @@ if(!isset($_SESSION['customer_id'])){
     }
     .section-title {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(2rem, 4vw, 3rem);
+      font-size: clamp(1.8rem, 4vw, 3rem);
       font-weight: 700;
       line-height: 1.15;
       margin-bottom: 18px;
     }
     .section-desc {
-      font-size: 1rem;
+      font-size: .95rem;
       color: var(--text-sub);
       max-width: 520px;
       line-height: 1.75;
@@ -292,7 +378,7 @@ if(!isset($_SESSION['customer_id'])){
     .about-inner {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 80px;
+      gap: 72px;
       align-items: center;
     }
     .about-visual { position: relative; }
@@ -301,25 +387,26 @@ if(!isset($_SESSION['customer_id'])){
       aspect-ratio: 4/3;
       background: var(--border);
       border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-sub);
-      font-size: .9rem;
-      transition: background var(--transition), color var(--transition);
+      overflow: hidden;
+      transition: background var(--transition);
+    }
+    .about-img-placeholder img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      border-radius: 20px;
     }
     .about-badge {
       position: absolute;
-      bottom: -20px; right: -20px;
+      bottom: -20px; right: -16px;
       background: var(--accent);
       color: #fff;
       border-radius: 14px;
-      padding: 18px 22px;
+      padding: 16px 20px;
       text-align: center;
       box-shadow: 0 8px 24px rgba(76,175,80,.3);
     }
-    .about-badge strong { display: block; font-size: 2rem; font-weight: 700; }
-    .about-badge span   { font-size: .78rem; font-weight: 500; opacity: .9; }
+    .about-badge strong { display: block; font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    .about-badge span   { font-size: .72rem; font-weight: 500; opacity: .9; }
 
     /* ─── Services ─── */
     #service {
@@ -329,15 +416,14 @@ if(!isset($_SESSION['customer_id'])){
     .service-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 28px;
-      margin-top: 52px;
+      gap: 24px;
+      margin-top: 48px;
     }
-
     .service-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 36px 30px;
+      padding: 32px 26px;
       position: relative;
       overflow: hidden;
       transition: border-color .3s, box-shadow .3s, transform .3s, background var(--transition);
@@ -352,51 +438,43 @@ if(!isset($_SESSION['customer_id'])){
     }
     .service-card:hover {
       border-color: var(--accent);
-      box-shadow: 0 20px 60px rgba(76,175,80,.25);
-      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 60px rgba(76,175,80,.2);
+      transform: translateY(-6px) scale(1.02);
     }
     .service-card:hover::before { opacity: 1; }
-
     .service-icon {
-      width: 52px; height: 52px;
+      width: 48px; height: 48px;
       background: var(--accent-lt);
-      border-radius: 14px;
+      border-radius: 13px;
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
       position: relative;
       transition: background .3s, transform .3s;
     }
     .service-icon svg {
-      width: 26px; height: 26px;
+      width: 24px; height: 24px;
       stroke: var(--accent);
       fill: none;
       stroke-width: 1.8;
       transition: stroke .3s;
     }
-    .service-card:hover .service-icon {
-      background: var(--accent);
-      transform: scale(1.12) rotate(-6deg);
-    }
+    .service-card:hover .service-icon { background: var(--accent); transform: scale(1.1) rotate(-6deg); }
     .service-card:hover .service-icon svg { stroke: #fff; }
-
     .service-name {
       font-family: 'Playfair Display', serif;
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 700;
       margin-bottom: 10px;
       color: var(--text);
-      transition: color .3s, transform .3s;
+      transition: color .3s;
+      position: relative;
     }
     .service-text {
-      font-size: .9rem;
+      font-size: .88rem;
       color: var(--text-sub);
       line-height: 1.7;
       position: relative;
       transition: color .3s;
-    }
-    .service-card:hover .service-name {
-      transform: scale(1.04);
-      transform-origin: left;
     }
     .service-card:hover .service-text { color: var(--text); }
 
@@ -408,37 +486,35 @@ if(!isset($_SESSION['customer_id'])){
     .contact-inner {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 80px;
+      gap: 72px;
       align-items: start;
     }
     .contact-info { padding-top: 8px; }
-    .contact-info .section-desc { margin-bottom: 40px; }
+    .contact-info .section-desc { margin-bottom: 36px; }
     .contact-detail {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 14px;
-      margin-bottom: 20px;
-      font-size: .95rem;
+      margin-bottom: 18px;
+      font-size: .92rem;
       color: var(--text-sub);
+      line-height: 1.6;
     }
     .contact-detail-icon {
-      width: 40px; height: 40px;
+      width: 38px; height: 38px;
       background: var(--accent-lt);
       border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
+      margin-top: 2px;
       transition: background var(--transition);
     }
-    .contact-detail-icon svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.8; }
-    .contact-form {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .contact-detail-icon svg { width: 17px; height: 17px; stroke: var(--accent); fill: none; stroke-width: 1.8; }
+    .contact-form { display: flex; flex-direction: column; gap: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .form-group { display: flex; flex-direction: column; gap: 7px; }
     .form-group label {
-      font-size: .8rem;
+      font-size: .76rem;
       font-weight: 600;
       letter-spacing: .06em;
       text-transform: uppercase;
@@ -449,12 +525,14 @@ if(!isset($_SESSION['customer_id'])){
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 10px;
-      padding: 12px 16px;
+      padding: 12px 15px;
       font-family: 'DM Sans', sans-serif;
       font-size: .95rem;
       color: var(--text);
       outline: none;
+      -webkit-appearance: none;
       transition: border-color .2s, background var(--transition), color var(--transition);
+      width: 100%;
     }
     .form-group input:focus,
     .form-group textarea:focus {
@@ -466,31 +544,97 @@ if(!isset($_SESSION['customer_id'])){
     /* ─── Footer ─── */
     footer {
       text-align: center;
-      padding: 32px 8%;
+      padding: 28px 8%;
       border-top: 1px solid var(--border);
-      font-size: .85rem;
+      font-size: .82rem;
       color: var(--text-sub);
       transition: border-color var(--transition), color var(--transition);
     }
 
     /* ─── Keyframes ─── */
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(28px); }
+      from { opacity: 0; transform: translateY(24px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ─── Responsive ─── */
-    @media (max-width: 900px) {
-      .nav-links { gap: 22px; margin-left: 28px; }
+    /* ══════════════════════════════════
+       RESPONSIVE BREAKPOINTS
+    ══════════════════════════════════ */
+
+    /* ─── Tablet (≤ 960px) ─── */
+    @media (max-width: 960px) {
+      .nav-links { gap: 20px; margin-left: 24px; }
       .about-inner,
-      .contact-inner { grid-template-columns: 1fr; gap: 48px; }
+      .contact-inner { grid-template-columns: 1fr; gap: 56px; }
       .service-grid { grid-template-columns: 1fr 1fr; }
-      .form-row { grid-template-columns: 1fr; }
-      .about-badge { bottom: -10px; right: 10px; }
+      .form-row { grid-template-columns: 1fr 1fr; }
+      .about-badge { bottom: -12px; right: 12px; }
     }
-    @media (max-width: 620px) {
+
+    /* ─── Tablet small (≤ 768px) ─── */
+    @media (max-width: 768px) {
+      :root { --nav-h: 60px; }
+      section { padding: 64px 6%; }
+
+      /* Hide desktop nav, show hamburger */
       .nav-links { display: none; }
-      .service-grid { grid-template-columns: 1fr; }
+      .hamburger { display: flex; }
+      .mobile-menu { display: block; }
+
+      .hero-content { padding: 0 6%; max-width: 100%; }
+      .hero-desc { max-width: 100%; }
+
+      .about-badge { bottom: -10px; right: 8px; }
+      .about-badge strong { font-size: 1.5rem; }
+
+      .form-row { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Mobile (≤ 480px) ─── */
+    @media (max-width: 480px) {
+      :root { --nav-h: 56px; }
+      section { padding: 56px 5%; }
+
+      .navbar { padding: 0 5%; }
+
+      .hero { min-height: 90svh; }
+      .hero-content { padding: 0 5%; }
+      .hero-title { font-size: clamp(2rem, 10vw, 3rem); }
+      .hero-buttons { flex-direction: column; gap: 12px; width: 100%; }
+      .hero-buttons .btn-primary { justify-content: center; width: 100%; padding: 15px 20px; font-size: .9rem; }
+
+      .service-grid { grid-template-columns: 1fr; gap: 16px; }
+      .service-card { padding: 26px 22px; }
+
+      .contact-inner { gap: 40px; }
+
+      .about-badge {
+        position: static;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 16px;
+        border-radius: 12px;
+        padding: 12px 18px;
+      }
+      .about-badge strong { font-size: 1.4rem; }
+      .about-badge span { font-size: .75rem; }
+
+      .toggle-label { display: none; }
+
+      footer { padding: 24px 5%; }
+    }
+
+    /* ─── Very small (≤ 360px) ─── */
+    @media (max-width: 360px) {
+      .hero-title { font-size: 1.9rem; }
+      .section-title { font-size: 1.6rem; }
+    }
+
+    /* ─── Touch device improvements ─── */
+    @media (hover: none) {
+      .service-card:hover { transform: none; box-shadow: none; }
+      .btn-primary:hover { transform: none; box-shadow: 0 6px 20px rgba(76,175,80,.35); }
     }
   </style>
 </head>
@@ -503,24 +647,53 @@ if(!isset($_SESSION['customer_id'])){
       <img src="assets/logodm.png" alt="CatDogKu" class="logo-dark" />
     </a>
 
-<ul class="nav-links">
-  <li><a href="#home" class="active">Home</a></li>
-  <li><a href="#about">About</a></li>
-  <li><a href="#service">Service</a></li>
-  <li><a href="reserve.php">Reserve</a></li>
-  <li><a href="cust_profile.php">Profile</a></li>
-  <li><a href="#contact">Contact</a></li>
-</ul>
+    <!-- Desktop Links -->
+    <ul class="nav-links">
+      <li><a href="#home" class="active">Home</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#service">Service</a></li>
+      <li><a href="reserve.php">Reserve</a></li>
+      <li><a href="cust_profile.php">Profile</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
 
     <div class="nav-spacer"></div>
 
+    <!-- Theme Toggle -->
     <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="Toggle dark mode">
       <span class="toggle-label" id="toggleLabel">OFF</span>
       <div class="toggle-track" id="toggleTrack">
         <div class="toggle-knob"></div>
       </div>
     </div>
+
+    <!-- Hamburger (mobile only) -->
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
   </nav>
+
+  <!-- ══════════════ MOBILE MENU ══════════════ -->
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <ul>
+      <li><a href="#home" class="active" onclick="closeMenu()">Home</a></li>
+      <li><a href="#about" onclick="closeMenu()">About</a></li>
+      <li><a href="#service" onclick="closeMenu()">Service</a></li>
+      <li><a href="reserve.php" onclick="closeMenu()">Reserve</a></li>
+      <li><a href="cust_profile.php" onclick="closeMenu()">Profile</a></li>
+      <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
+    </ul>
+    <div class="mobile-menu-footer">
+      <span>Dark Mode</span>
+      <div class="theme-toggle" id="themeToggleMobile" role="button" tabindex="0" aria-label="Toggle dark mode">
+        <div class="toggle-track" id="toggleTrackMobile">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════════ HERO ══════════════ -->
   <section id="home" class="hero">
@@ -529,17 +702,11 @@ if(!isset($_SESSION['customer_id'])){
     <div class="hero-content">
       <span class="hero-tag">Welcome</span>
       <h1 class="hero-title">CatDogKu</h1>
-      <p class="hero-desc">
-        Because Your Pets Deserve the Best
-      </p>
-<div class="hero-buttons">
-  <a href="#service" class="btn-primary">
-    Show More
-  </a>
-  <a href="reserve.html" class="btn-primary">
-    Reserve Now
-  </a>
-</div>
+      <p class="hero-desc">Because Your Pets Deserve the Best</p>
+      <div class="hero-buttons">
+        <a href="#service" class="btn-primary">Show More</a>
+        <a href="reserve.php" class="btn-primary">Reserve Now <span class="btn-arrow">→</span></a>
+      </div>
     </div>
   </section>
 
@@ -547,7 +714,9 @@ if(!isset($_SESSION['customer_id'])){
   <section id="about">
     <div class="about-inner">
       <div class="about-visual">
-        <div class="about-img-placeholder"><img src="assets/img1.jpg" alt="About" style="border-radius:20px;width:100%;object-fit:cover;"></div>
+        <div class="about-img-placeholder">
+          <img src="assets/img1.jpg" alt="About CatDogKu" />
+        </div>
         <div class="about-badge">
           <strong>10+</strong>
           <span>Years of Experience</span>
@@ -569,7 +738,6 @@ if(!isset($_SESSION['customer_id'])){
     <h2 class="section-title">What We Offer</h2>
 
     <div class="service-grid">
-
       <div class="service-card">
         <div class="service-icon">
           <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -601,7 +769,6 @@ if(!isset($_SESSION['customer_id'])){
         <h3 class="service-name">Pet Boarding</h3>
         <p class="service-text">Deskripsi singkat layanan ketiga Anda. Jelaskan manfaatnya bagi pelanggan.</p>
       </div>
-
     </div>
   </section>
 
@@ -611,9 +778,7 @@ if(!isset($_SESSION['customer_id'])){
       <div class="contact-info">
         <p class="section-tag">Contact Us</p>
         <h2 class="section-title">Any Question</h2>
-        <p class="section-desc">
-          Contact us anytime. Our team is ready to serve you wholeheartedly.
-        </p>
+        <p class="section-desc">Contact us anytime. Our team is ready to serve you wholeheartedly.</p>
 
         <div class="contact-detail">
           <div class="contact-detail-icon">
@@ -641,11 +806,11 @@ if(!isset($_SESSION['customer_id'])){
         <div class="form-row">
           <div class="form-group">
             <label>Name</label>
-            <input type="text" id="wa-name" placeholder="Full Name" />
+            <input type="text" id="wa-name" placeholder="Full Name" autocomplete="name" />
           </div>
           <div class="form-group">
             <label>Email</label>
-            <input type="email" id="wa-email" placeholder="example@gmail.com" />
+            <input type="email" id="wa-email" placeholder="example@gmail.com" autocomplete="email" />
           </div>
         </div>
         <div class="form-group">
@@ -657,7 +822,7 @@ if(!isset($_SESSION['customer_id'])){
           <textarea id="wa-message" placeholder="Type a message ..."></textarea>
         </div>
         <button class="btn-primary" type="button" onclick="sendToWhatsApp()">
-          Send to WhatsApp
+          Send to WhatsApp <span class="btn-arrow">→</span>
         </button>
       </div>
     </div>
@@ -670,46 +835,84 @@ if(!isset($_SESSION['customer_id'])){
 
   <!-- ══════════════ SCRIPT ══════════════ -->
   <script>
-    /* ── Theme toggle ── */
-    const html   = document.documentElement;
-    const toggle = document.getElementById('themeToggle');
-    const track  = document.getElementById('toggleTrack');
-    const label  = document.getElementById('toggleLabel');
+    /* ── Theme toggle (shared logic) ── */
+    const html = document.documentElement;
+    const track        = document.getElementById('toggleTrack');
+    const label        = document.getElementById('toggleLabel');
+    const trackMobile  = document.getElementById('toggleTrackMobile');
 
     function applyTheme(dark) {
       html.setAttribute('data-theme', dark ? 'dark' : 'light');
       track.classList.toggle('on', dark);
-      label.textContent = dark ? 'ON' : 'OFF';
+      if (trackMobile) trackMobile.classList.toggle('on', dark);
+      if (label) label.textContent = dark ? 'ON' : 'OFF';
       localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+
+    function toggleTheme() {
+      applyTheme(html.getAttribute('data-theme') !== 'dark');
     }
 
     const saved = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     applyTheme(saved ? saved === 'dark' : prefersDark);
 
-    toggle.addEventListener('click', () => {
-      applyTheme(html.getAttribute('data-theme') !== 'dark');
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    document.getElementById('themeToggle').addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTheme(); }
     });
-    toggle.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        applyTheme(html.getAttribute('data-theme') !== 'dark');
+    if (trackMobile) {
+      document.getElementById('themeToggleMobile').addEventListener('click', toggleTheme);
+    }
+
+    /* ── Hamburger / Mobile Menu ── */
+    const hamburger  = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    let menuOpen = false;
+
+    function closeMenu() {
+      menuOpen = false;
+      hamburger.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+      mobileMenu.classList.remove('open');
+      mobileMenu.setAttribute('aria-hidden', 'true');
+    }
+
+    hamburger.addEventListener('click', () => {
+      menuOpen = !menuOpen;
+      hamburger.classList.toggle('open', menuOpen);
+      hamburger.setAttribute('aria-expanded', menuOpen);
+      mobileMenu.classList.toggle('open', menuOpen);
+      mobileMenu.setAttribute('aria-hidden', !menuOpen);
+    });
+
+    /* Close menu when clicking outside */
+    document.addEventListener('click', e => {
+      if (menuOpen && !hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
+        closeMenu();
       }
     });
 
-    /* ── Active nav highlight on scroll (exclude reserve btn) ── */
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-links a:not(.nav-reserve-btn)');
+    /* Close menu on ESC */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && menuOpen) closeMenu();
+    });
+
+    /* ── Active nav highlight on scroll ── */
+    const sections    = document.querySelectorAll('section[id]');
+    const desktopLinks = document.querySelectorAll('.nav-links a');
+    const mobileLinks  = document.querySelectorAll('.mobile-menu a');
+
+    function setActive(id) {
+      [...desktopLinks, ...mobileLinks].forEach(a => {
+        const href = a.getAttribute('href');
+        a.classList.toggle('active', href === `#${id}`);
+      });
+    }
 
     sections.forEach(s => {
       new IntersectionObserver(entries => {
-        entries.forEach(e => {
-          if (e.isIntersecting) {
-            navLinks.forEach(a => a.classList.remove('active'));
-            const link = document.querySelector(`.nav-links a[href="#${e.target.id}"]`);
-            if (link) link.classList.add('active');
-          }
-        });
+        entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
       }, { threshold: .45 }).observe(s);
     });
 
@@ -721,12 +924,11 @@ if(!isset($_SESSION['customer_id'])){
       const message = document.getElementById('wa-message').value.trim();
 
       if (!name || !message) {
-        alert('Mohon isi nama dan pesan terlebih dahulu.');
+        alert('Please fill in your name and message.');
         return;
       }
 
       const phone = '6285624312595';
-
       const text = encodeURIComponent(
         `Halo CatDogKu! 🐾\n\n` +
         `*Nama:* ${name}\n` +

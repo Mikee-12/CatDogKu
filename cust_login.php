@@ -13,17 +13,17 @@ if(isset($_POST['login'])){
 
     if($user && password_verify($password, $user['password'])){
 
-        $_SESSION['customer_id']   = $user['id_user'];
-        $_SESSION['customer_nama'] = $user['nama_depan'];
-        $_SESSION['customer_role'] = isset($user['role']) ? $user['role'] : 'customer';
+    $_SESSION['customer_id']   = $user['id_user'];
+    $_SESSION['customer_nama'] = $user['nama_depan'];
+    $_SESSION['customer_role'] = $user['role'] ?? 'user';
+    $_SESSION['admin_id']      = $user['id_user'];  // ← PINDAH KE SINI
 
-        // ✅ Gunakan header() bukan echo script
-        if($email === 'admin@catdogku.com' || $_SESSION['customer_role'] === 'admin'){
-            header('Location: admin_dash.php');
-        } else {
-            header('Location: index.php');
-        }
-        exit(); // ✅ Wajib setelah header redirect
+    if($_SESSION['customer_role'] === 'admin'){
+        header('Location: admin_dash.php');
+    } else {
+        header('Location: index.php');
+    }
+    exit();
 
     } else {
         $error = "Incorrect email or password";

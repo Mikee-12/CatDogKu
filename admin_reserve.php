@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once 'config/koneksi.php';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -19,23 +20,28 @@ function db_rows($conn, $sql) {
 
 // ── Handle LOGOUT (POST) ──────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_logout'])) {
-    $password_input = $_POST['logout_password'] ?? '';
-
-    // Ambil password admin dari session / DB
-    // Sesuaikan dengan cara autentikasi project kamu
+    $password_input = trim($_POST['logout_password'] ?? '');
     $admin_id = $_SESSION['admin_id'] ?? 0;
-    $row = mysqli_fetch_assoc(mysqli_query($conn, "SELECT password FROM admins WHERE id_admin=$admin_id LIMIT 1"));
+    $row = null;
 
-    $password_ok = $row && password_verify($password_input, $row['password']);
+    if ($admin_id > 0 && $password_input !== '') {
+        $stmt = mysqli_prepare($conn, "SELECT password FROM user WHERE id_user = ? AND role = 'admin' LIMIT 1");
+        mysqli_stmt_bind_param($stmt, "i", $admin_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+    }
 
-    if ($password_ok) {
+    if ($row && password_verify($password_input, $row['password'])) {
         session_destroy();
         header('Location: cust_login.php');
         exit;
     } else {
-        $logout_error = 'Password salah. Silakan coba lagi.';
+        $logout_error = 'Wrong password. Please try again.';
     }
 }
+
 
 // ── Filters ─────────────────────────────────────────────────────────────────
 $filter_status  = isset($_GET['status'])  && $_GET['status']  !== '' ? $_GET['status']  : null;

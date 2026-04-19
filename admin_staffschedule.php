@@ -1,29 +1,31 @@
 <?php
+session_start();
 require_once 'config/koneksi.php';
 
 // ── Handle LOGOUT (POST) ──────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_logout'])) {
-    $password_input = $_POST['logout_password'] ?? '';
-    if (!empty($password_input)) {
-        $admin_id = $_SESSION['admin_id'] ?? 0;
-        $stmt = mysqli_prepare($conn, "SELECT password FROM admin WHERE id = ?");
+    $password_input = trim($_POST['logout_password'] ?? '');
+    $admin_id = $_SESSION['admin_id'] ?? 0;
+    $row = null;
+
+    if ($admin_id > 0 && $password_input !== '') {
+        $stmt = mysqli_prepare($conn, "SELECT password FROM user WHERE id_user = ? AND role = 'admin' LIMIT 1");
         mysqli_stmt_bind_param($stmt, "i", $admin_id);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
-        if ($row = mysqli_fetch_assoc($result)) {
-            if (password_verify($password_input, $row['password'])) {
-                session_destroy();
-                header("Location: cust_login.php");
-                exit;
-            } else {
-                $logout_error = 'Password salah. Silakan coba lagi.';
-            }
-        }
+        $row = mysqli_fetch_assoc($result);
         mysqli_stmt_close($stmt);
+    }
+
+    if ($row && password_verify($password_input, $row['password'])) {
+        session_destroy();
+        header('Location: cust_login.php');
+        exit;
     } else {
-        $logout_error = 'Password diperlukan.';
+        $logout_error = 'Wrong password. Please try again.';
     }
 }
+
 
 function db_val($conn, $sql) {
     $res = mysqli_query($conn, $sql);
@@ -42,7 +44,8 @@ function db_rows($conn, $sql) {
 $days_order = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
 
 // ── Handle POST actions ────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['confirm_logout'])) {
+
 
     // ── DELETE SCHEDULE ───────────────────────────────────────────────────────
     if (isset($_POST['delete_schedule'])) {
