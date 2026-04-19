@@ -296,17 +296,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <a href="admin_service.php" class="<?= $current_page==='admin_service.php'?'active':'' ?>">
         <i class="bi bi-stars me-2 fs-5 align-middle"></i> Services
     </a>
-    <a href="breeds.php" class="<?= $current_page==='breeds.php'?'active':'' ?>">
+    <a href="admin_breed.php" class="<?= $current_page==='admin_breed.php'?'active':'' ?>">
         <i class="bi bi-bug me-2 fs-5 align-middle"></i> Breeds
     </a>
-    <a href="schedules.php" class="<?= $current_page==='schedules.php'?'active':'' ?>">
+    <a href="admin_staffschedule.php" class="<?= $current_page==='admin_staffschedule.php'?'active':'' ?>">
         <i class="bi bi-clock me-2 fs-5 align-middle"></i> Staff Schedules
     </a>
 
     <div class="mt-4 pt-3 border-top border-secondary">
-        <a href="settings.php" class="<?= $current_page==='settings.php'?'active':'' ?>">
-            <i class="bi bi-gear me-2 fs-5 align-middle"></i> Settings
-        </a>
         <a href="logout.php" class="logout-link text-danger fw-bold">
             <i class="bi bi-box-arrow-left me-2 fs-5 align-middle"></i> Logout
         </a>

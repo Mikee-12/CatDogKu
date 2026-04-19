@@ -272,11 +272,10 @@ body { background:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-ser
     <a href="admin_user.php"    class="<?= $current_page_file==='admin_user.php'   ?'active':'' ?>"><i class="bi bi-people me-2 fs-5"></i> Users</a>
     <a href="admin_staff.php"   class="<?= $current_page_file==='admin_staff.php'  ?'active':'' ?>"><i class="bi bi-person-badge me-2 fs-5"></i> Staff</a>
     <a href="admin_service.php"      class="<?= $current_page_file==='admin_service.php'     ?'active':'' ?>"><i class="bi bi-stars me-2 fs-5"></i> Services</a>
-    <a href="breeds.php"        class="<?= $current_page_file==='breeds.php'       ?'active':'' ?>"><i class="bi bi-bug me-2 fs-5"></i> Breeds</a>
-    <a href="schedules.php"     class="<?= $current_page_file==='schedules.php'    ?'active':'' ?>"><i class="bi bi-clock me-2 fs-5"></i> Staff Schedules</a>
+    <a href="admin_breed.php"        class="<?= $current_page_file==='admin_breed.php'       ?'active':'' ?>"><i class="bi bi-bug me-2 fs-5"></i> Breeds</a>
+    <a href="admin_staffschedule.php"     class="<?= $current_page_file==='admin_staffschedule.php'    ?'active':'' ?>"><i class="bi bi-clock me-2 fs-5"></i> Staff Schedules</a>
 
     <div class="mt-4 pt-3 border-top border-secondary">
-        <a href="settings.php"  class="<?= $current_page_file==='settings.php'     ?'active':'' ?>"><i class="bi bi-gear me-2 fs-5"></i> Settings</a>
         <a href="logout.php" class="logout-link text-danger fw-bold"><i class="bi bi-box-arrow-left me-2 fs-5"></i> Logout</a>
     </div>
 </div>
