@@ -95,16 +95,17 @@ $current_page = basename($_SERVER['PHP_SELF']);
         border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
-    .sidebar a {
-        color: #aeb6bf;
-        text-decoration: none;
-        padding: 12px 20px;
-        display: block;
-        border-radius: 10px;
-        margin-bottom: 8px;
-        transition: all 0.3s ease;
-        font-weight: 500;
-    }
+.sidebar a {
+    color: #aeb6bf;
+    text-decoration: none;
+    padding: 12px 20px;
+    display: flex;        /* ← jadi ini */
+    align-items: center;  /* ← tambahkan ini */
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
 
     .sidebar a:hover,
     .sidebar a.active {
@@ -275,7 +276,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </a>
 
     <div class="text-uppercase text-secondary px-2 mb-1 mt-3" style="font-size:11px;letter-spacing:1px;font-weight:600;">Management</div>
-    <a href="reservations.php" class="<?= $current_page==='reservations.php'?'active':'' ?>">
+    <a href="admin_reserve.php" class="<?= $current_page==='admin_reserve.php'?'active':'' ?>">
         <i class="bi bi-calendar-check me-2 fs-5 align-middle"></i> Reservations
         <?php if($pending>0): ?>
             <span class="badge bg-danger ms-auto"><?= $pending ?></span>
@@ -286,13 +287,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </a>
 
     <div class="text-uppercase text-secondary px-2 mb-1 mt-3" style="font-size:11px;letter-spacing:1px;font-weight:600;">Master Data</div>
-    <a href="users.php" class="<?= $current_page==='users.php'?'active':'' ?>">
+    <a href="admin_user.php" class="<?= $current_page==='admin_user.php'?'active':'' ?>">
         <i class="bi bi-people me-2 fs-5 align-middle"></i> Users
     </a>
-    <a href="staffs.php" class="<?= $current_page==='staffs.php'?'active':'' ?>">
+    <a href="admin_staff.php" class="<?= $current_page==='admin_staffs.php'?'active':'' ?>">
         <i class="bi bi-person-badge me-2 fs-5 align-middle"></i> Staff
     </a>
-    <a href="services.php" class="<?= $current_page==='services.php'?'active':'' ?>">
+    <a href="admin_service.php" class="<?= $current_page==='admin_service.php'?'active':'' ?>">
         <i class="bi bi-stars me-2 fs-5 align-middle"></i> Services
     </a>
     <a href="breeds.php" class="<?= $current_page==='breeds.php'?'active':'' ?>">
@@ -321,7 +322,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <h2 class="fw-bold text-dark mb-0">Dashboard</h2>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <a href="reservations.php?status=pending" class="position-relative text-decoration-none text-secondary">
+            <a href="admin_reserve.php?status=pending" class="position-relative text-decoration-none text-secondary">
                 <i class="bi bi-bell fs-5"></i>
                 <?php if($pending>0): ?>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px"><?= $pending ?></span>
@@ -333,60 +334,68 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <!-- Stat Cards -->
     <div class="row g-4 mb-4">
         <div class="col-md-3 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Total Users</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($total_users) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px">Registered Customers</p>
-                    </div>
-                    <div class="icon-box bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-people"></i>
+            <a href="admin_user.php" class="text-decoration-none">
+                <div class="card stat-card shadow-sm h-100 p-2">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size:13px">Total Users</p>
+                            <h3 class="fw-bold mb-0 text-dark"><?= number_format($total_users) ?></h3>
+                            <p class="text-muted mb-0" style="font-size:12px">Registered Customers</p>
+                        </div>
+                        <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-people"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-md-3 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Total Reservations</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($total_reservasi) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px"><span class="text-warning fw-semibold"><?= $pending ?> pending</span> waiting</p>
-                    </div>
-                    <div class="icon-box bg-info bg-opacity-10 text-info">
-                        <i class="bi bi-calendar-check"></i>
+            <a href="admin_reserve.php" class="text-decoration-none">
+                <div class="card stat-card shadow-sm h-100 p-2">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size:13px">Total Reservations</p>
+                            <h3 class="fw-bold mb-0 text-dark"><?= number_format($total_reservasi) ?></h3>
+                            <p class="text-muted mb-0" style="font-size:12px"><span class="text-warning fw-semibold"><?= $pending ?> pending</span> waiting</p>
+                        </div>
+                        <div class="icon-box bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-md-3 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Revenue</p>
-                        <h4 class="fw-bold mb-0 text-dark" style="font-size:18px">Rp <?= number_format($total_pendapatan, 0, ',', '.') ?></h4>
-                        <p class="text-muted mb-0" style="font-size:12px">Total paid payments</p>
-                    </div>
-                    <div class="icon-box bg-success bg-opacity-10 text-success">
-                        <i class="bi bi-graph-up-arrow"></i>
+            <a href="admin_pay.php" class="text-decoration-none">
+                <div class="card stat-card shadow-sm h-100 p-2">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size:13px">Revenue</p>
+                            <h4 class="fw-bold mb-0 text-dark" style="font-size:18px">Rp <?= number_format($total_pendapatan, 0, ',', '.') ?></h4>
+                            <p class="text-muted mb-0" style="font-size:12px">Total paid payments</p>
+                        </div>
+                        <div class="icon-box bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-md-3 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Active Staff</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($total_staff) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px">Ready to serve customers</p>
-                    </div>
-                    <div class="icon-box bg-warning bg-opacity-10" style="color:#d97706">
-                        <i class="bi bi-person-badge"></i>
+            <a href="admin_staff.php" class="text-decoration-none">
+                <div class="card stat-card shadow-sm h-100 p-2">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size:13px">Active Staff</p>
+                            <h3 class="fw-bold mb-0 text-dark"><?= number_format($total_staff) ?></h3>
+                            <p class="text-muted mb-0" style="font-size:12px">Ready to serve customers</p>
+                        </div>
+                        <div class="icon-box bg-warning bg-opacity-10" style="color:#d97706">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
@@ -425,7 +434,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <!-- Chart -->
     <div class="chart-container mb-4">
         <h5 class="fw-bold mb-4 border-bottom pb-3">
-            <i class="bi bi-graph-up-arrow text-primary me-2"></i> Reservation Status Trend
+            Reservation Status Trend
         </h5>
         <div style="height:300px;">
             <canvas id="reservasiChart"></canvas>
@@ -440,9 +449,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <div class="table-card">
                 <div class="table-card-header">
                     <h5 class="fw-bold mb-0" style="font-size:15px">
-                        <i class="bi bi-list-ul text-primary me-2"></i> Recent Reservations
+                       Recent Reservations
                     </h5>
-                    <a href="reservations.php" class="text-primary text-decoration-none" style="font-size:13px;font-weight:500">View all →</a>
+                    <a href="admin_reserve.php" class="text-primary text-decoration-none" style="font-size:13px;font-weight:500">View all →</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table mb-0">
@@ -511,7 +520,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <div class="table-card h-100">
                 <div class="table-card-header">
                     <h5 class="fw-bold mb-0" style="font-size:15px">
-                        <i class="bi bi-star text-warning me-2"></i> Popular Services
+                        Popular Services
                     </h5>
                     <a href="services.php" class="text-primary text-decoration-none" style="font-size:13px;font-weight:500">Details →</a>
                 </div>
