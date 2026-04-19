@@ -16,6 +16,26 @@ function db_rows($conn, $sql) {
     return $rows;
 }
 
+// ── Handle LOGOUT (POST) ──────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_logout'])) {
+    $password_input = $_POST['logout_password'] ?? '';
+
+    // Ambil password admin dari session / DB
+    // Sesuaikan dengan cara autentikasi project kamu
+    $admin_id = $_SESSION['admin_id'] ?? 0;
+    $row = mysqli_fetch_assoc(mysqli_query($conn, "SELECT password FROM admins WHERE id_admin=$admin_id LIMIT 1"));
+
+    $password_ok = $row && password_verify($password_input, $row['password']);
+
+    if ($password_ok) {
+        session_destroy();
+        header('Location: cust_login.php');
+        exit;
+    } else {
+        $logout_error = 'Password salah. Silakan coba lagi.';
+    }
+}
+
 // ── Handle ADD STAFF (POST) ───────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_staff'])) {
     $nama_staff        = mysqli_real_escape_string($conn, trim($_POST['nama_staff']        ?? ''));
@@ -154,7 +174,8 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 .sidebar-brand { font-size: 1.25rem; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .sidebar a { color: #aeb6bf; text-decoration: none; padding: 12px 20px; display: flex; align-items: center; border-radius: 10px; margin-bottom: 8px; transition: all .3s ease; font-weight: 500; }
 .sidebar a:hover, .sidebar a.active { background-color: #3498db; color: #fff; transform: translateX(5px); }
-.sidebar a.logout-link:hover { background-color: rgba(231,76,60,.2); color: #e74c3c; transform: none; }
+.sidebar a.logout-link { color: #e74c3c; }
+.sidebar a.logout-link:hover { background-color: rgba(231,76,60,.15); color: #e74c3c; transform: translateX(5px); }
 
 /* ── Layout ───────────────────────────────────────────────────────────────── */
 .main-content { margin-left: 260px; width: calc(100% - 260px); min-height: 100vh; }
@@ -208,7 +229,7 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 .modal-body    { padding: 24px; }
 .modal-footer  { border-top: 1px solid #f0f0f0; padding: 16px 24px; }
 
-/* ── Form modal — same style as Add Breed ─────────────────────────────────── */
+/* ── Form modal — same style as Add Staff ─────────────────────────────────── */
 .form-modal .modal-body label {
     font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px;
 }
@@ -234,6 +255,40 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 }
 .form-modal .form-check-input:checked { background-color: #3498db; }
 .form-modal .form-check-label { font-size: 13px; font-weight: 500; color: #374151; padding-left: 4px; cursor: pointer; }
+
+/* ── Logout modal spesifik ───────────────────────────────────────────────── */
+.logout-icon-wrap {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: rgba(231,76,60,.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #e74c3c;
+    margin: 0 auto 6px;
+}
+.logout-modal-error {
+    background: #fdecea;
+    border: 1.5px solid #f5c6c6;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #922b21;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+/* Password input dengan toggle show/hide */
+.pw-wrapper { position: relative; }
+.pw-wrapper .form-control { padding-right: 44px; }
+.pw-toggle {
+    position: absolute; top: 50%; right: 12px;
+    transform: translateY(-50%);
+    background: none; border: none; padding: 0;
+    color: #9ca3af; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center;
+    transition: color .2s;
+}
+.pw-toggle:hover { color: #374151; }
 
 /* ── Detail Modal ─────────────────────────────────────────────────────────── */
 .detail-row { display: flex; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 13.5px; }
@@ -303,10 +358,8 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
     </a>
 
     <div class="mt-4 pt-3 border-top border-secondary">
-        <a href="settings.php" class="<?= $current_page_file==='settings.php'?'active':'' ?>">
-            <i class="bi bi-gear me-2 fs-5"></i> Settings
-        </a>
-        <a href="logout.php" class="logout-link text-danger fw-bold">
+        <!-- Logout: trigger modal, bukan href langsung -->
+        <a href="#" class="logout-link fw-bold" onclick="openLogoutModal(); return false;">
             <i class="bi bi-box-arrow-left me-2 fs-5"></i> Logout
         </a>
     </div>
@@ -752,15 +805,92 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
     </div>
 </div>
 
+
+<!-- ══════════════════ LOGOUT CONFIRMATION MODAL ══════════════════════════ -->
+<div class="modal fade form-modal" id="logoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        onclick="clearLogoutForm()"></button>
+            </div>
+            <form method="POST" action="admin_staff.php" id="logoutForm">
+                <input type="hidden" name="confirm_logout" value="1">
+                <div class="modal-body pt-2">
+
+                    <!-- Icon + judul -->
+                    <div class="text-center mb-4">
+                        <div class="logout-icon-wrap">
+                            <i class="bi bi-box-arrow-left"></i>
+                        </div>
+                        <h5 class="fw-bold mt-3 mb-1" style="font-size:16px;color:#1a1a2e">Log Out Confirmation</h5>
+                        <p class="text-muted mb-0" style="font-size:13px">
+                            Enter your password to log out of this session.
+                        </p>
+                    </div>
+
+                    <!-- Error message (tampil jika password salah dari PHP) -->
+                    <?php if(!empty($logout_error)): ?>
+                    <div class="logout-modal-error">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <?= htmlspecialchars($logout_error) ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Error JS (salah pw tanpa reload) -->
+                    <div class="logout-modal-error" id="logout-js-error" style="display:none">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span id="logout-js-error-msg">Password is required.</span>
+                    </div>
+
+                    <!-- Password field -->
+                    <div class="mb-3">
+                        <label class="form-label">Password <span class="text-danger">*</span></label>
+                        <div class="pw-wrapper">
+                            <input type="password" name="logout_password" id="logout-pw"
+                                   class="form-control" placeholder="Enter your password" required
+                                   autocomplete="current-password">
+                            <button type="button" class="pw-toggle" id="pw-toggle-btn"
+                                    onclick="togglePwVisibility()">
+                                <i class="bi bi-eye" id="pw-toggle-icon"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Confirm your identity before logging out.</div>
+                    </div>
+
+                    <!-- Divider tipis -->
+                    <hr style="border-color:#f0f0f0;margin:18px 0 16px">
+
+                    <!-- Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger fw-bold"
+                                style="border-radius:10px;font-size:13.5px;padding:10px"
+                                onclick="return validateLogout()">
+                                Yes, Logout
+                        </button>
+                        <button type="button" class="btn btn-light fw-semibold"
+                                style="border-radius:10px;font-size:13px;padding:9px;color:#6c757d"
+                                data-bs-dismiss="modal" onclick="clearLogoutForm()">
+                            Cancel
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 <!-- ══════════════════ TOAST ═══════════════════════════════════════════════ -->
 <div class="toast-notif" id="toastNotif">
     <i class="bi bi-check-circle-fill"></i>
-    <span id="toastMsg">Berhasil!</span>
+    <span id="toastMsg">Success!</span>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ── Toggle label ──────────────────────────────────────────────────────────────
+// ── Toggle label Add/Edit ─────────────────────────────────────────────────────
 document.getElementById('add-active').addEventListener('change', function() {
     document.getElementById('add-active-label').textContent = this.checked ? 'Active' : 'Inactive';
 });
@@ -826,6 +956,58 @@ function openDetail(st, color, initials) {
 
     new bootstrap.Modal(document.getElementById('detailModal')).show();
 }
+
+// ── Logout Modal ──────────────────────────────────────────────────────────────
+function openLogoutModal() {
+    clearLogoutForm();
+    new bootstrap.Modal(document.getElementById('logoutModal')).show();
+    // Fokus ke input password setelah modal terbuka
+    document.getElementById('logoutModal').addEventListener('shown.bs.modal', function onShown() {
+        document.getElementById('logout-pw').focus();
+        this.removeEventListener('shown.bs.modal', onShown);
+    });
+}
+
+function clearLogoutForm() {
+    document.getElementById('logout-pw').value = '';
+    document.getElementById('logout-js-error').style.display = 'none';
+    // Reset icon show/hide
+    document.getElementById('logout-pw').type = 'password';
+    document.getElementById('pw-toggle-icon').className = 'bi bi-eye';
+}
+
+function validateLogout() {
+    const pw  = document.getElementById('logout-pw').value.trim();
+    const err = document.getElementById('logout-js-error');
+    const msg = document.getElementById('logout-js-error-msg');
+    if (pw === '') {
+        msg.textContent = 'Password tidak boleh kosong.';
+        err.style.display = 'flex';
+        document.getElementById('logout-pw').focus();
+        return false;
+    }
+    err.style.display = 'none';
+    return true; // lanjut submit
+}
+
+function togglePwVisibility() {
+    const input = document.getElementById('logout-pw');
+    const icon  = document.getElementById('pw-toggle-icon');
+    if (input.type === 'password') {
+        input.type       = 'text';
+        icon.className   = 'bi bi-eye-slash';
+    } else {
+        input.type       = 'password';
+        icon.className   = 'bi bi-eye';
+    }
+}
+
+// Buka logout modal otomatis jika ada error password dari PHP
+<?php if(!empty($logout_error)): ?>
+    window.addEventListener('DOMContentLoaded', () => {
+        new bootstrap.Modal(document.getElementById('logoutModal')).show();
+    });
+<?php endif; ?>
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(msg) {
