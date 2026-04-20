@@ -409,6 +409,83 @@ if(isset($_POST['register'])){
 .pw-toggle.active .eye-off {
   display: block;
 }
+
+    /* ─── Hamburger Button ─── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      width: 40px; height: 40px;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+      margin-left: 12px;
+      border-radius: 8px;
+      transition: background .2s;
+    }
+    .hamburger:hover { background: var(--border); }
+    .hamburger span {
+      display: block;
+      width: 22px; height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: transform .3s, opacity .3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ─── Mobile Menu ─── */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: var(--nav-h); left: 0; right: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      z-index: 1002;
+      padding: 12px 0 20px;
+      transform: translateY(-8px);
+      opacity: 0;
+      transition: transform .3s, opacity .3s;
+    }
+    .mobile-menu.open {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .mobile-menu ul {
+      list-style: none;
+      padding: 0;
+    }
+    .mobile-menu ul li a {
+      display: block;
+      padding: 14px 24px;
+      font-size: .95rem;
+      color: var(--text-sub);
+      border-left: 3px solid transparent;
+      transition: color .2s, background .2s, border-color .2s;
+    }
+    .mobile-menu ul li a:hover,
+    .mobile-menu ul li a.active {
+      color: var(--accent);
+      background: var(--accent-lt);
+      border-left-color: var(--accent);
+    }
+    .mobile-menu-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+    .mobile-menu-footer span {
+      font-size: .8rem;
+      color: var(--text-sub);
+      font-weight: 500;
+    }
+
   </style>
 </head>
 <body>
@@ -419,14 +496,54 @@ if(isset($_POST['register'])){
       <img src="assets/logolm.png" alt="CatDogKu" class="logo-light" />
       <img src="assets/logodm.png" alt="CatDogKu" class="logo-dark" />
     </a>
+
+    <!-- Desktop Links -->
+    <ul class="nav-links">
+      <li><a href="index.php">Home</a></li>
+      <li><a href="index.php#about">About</a></li>
+      <li><a href="index.php#service">Service</a></li>
+      <li><a href="reserve.php">Reserve</a></li>
+      <li><a href="cust_profile.php">Profile</a></li>
+      <li><a href="index.php#contact">Contact</a></li>
+    </ul>
+
     <div class="nav-spacer"></div>
+
+    <!-- Theme Toggle -->
     <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="Toggle dark mode">
       <span class="toggle-label" id="toggleLabel">OFF</span>
       <div class="toggle-track" id="toggleTrack">
         <div class="toggle-knob"></div>
       </div>
     </div>
+
+    <!-- Hamburger (mobile only) -->
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
   </nav>
+
+  <!-- MOBILE MENU -->
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <ul>
+      <li><a href="index.php" onclick="closeMenu()">Home</a></li>
+      <li><a href="index.php#about" onclick="closeMenu()">About</a></li>
+      <li><a href="index.php#service" onclick="closeMenu()">Service</a></li>
+      <li><a href="reserve.php" onclick="closeMenu()">Reserve</a></li>
+      <li><a href="cust_profile.php" onclick="closeMenu()">Profile</a></li>
+      <li><a href="index.php#contact" onclick="closeMenu()">Contact</a></li>
+    </ul>
+    <div class="mobile-menu-footer">
+      <span>Dark Mode</span>
+      <div class="theme-toggle" id="themeToggleMobile" role="button" tabindex="0" aria-label="Toggle dark mode">
+        <div class="toggle-track" id="toggleTrackMobile">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════════ BACKGROUND ══════════════ -->
   <div class="bg-image"></div>
@@ -567,6 +684,61 @@ if(isset($_POST['register'])){
         e.preventDefault();
         applyTheme(html.getAttribute('data-theme') !== 'dark');
       }
+    });
+
+    // Theme toggle
+    const html2 = document.documentElement;
+    const trackMobile = document.getElementById('toggleTrackMobile');
+    
+    function applyTheme2(dark) {
+      html2.setAttribute('data-theme', dark ? 'dark' : 'light');
+      track.classList.toggle('on', dark);
+      if (trackMobile) trackMobile.classList.toggle('on', dark);
+      if (label) label.textContent = dark ? 'ON' : 'OFF';
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+    
+    function toggleTheme2() {
+      applyTheme2(html2.getAttribute('data-theme') !== 'dark');
+    }
+    
+    const saved2 = localStorage.getItem('theme');
+    const prefersDark2 = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme2(saved2 ? saved2 === 'dark' : prefersDark2);
+    
+    if (trackMobile) {
+      document.getElementById('themeToggleMobile').addEventListener('click', toggleTheme2);
+    }
+    
+    // Hamburger menu
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    let menuOpen = false;
+    
+    function closeMenu() {
+      menuOpen = false;
+      hamburger.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+      mobileMenu.classList.remove('open');
+      mobileMenu.setAttribute('aria-hidden', 'true');
+    }
+    
+    hamburger.addEventListener('click', () => {
+      menuOpen = !menuOpen;
+      hamburger.classList.toggle('open', menuOpen);
+      hamburger.setAttribute('aria-expanded', menuOpen);
+      mobileMenu.classList.toggle('open', menuOpen);
+      mobileMenu.setAttribute('aria-hidden', !menuOpen);
+    });
+    
+    document.addEventListener('click', e => {
+      if (menuOpen && !hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
+        closeMenu();
+      }
+    });
+    
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && menuOpen) closeMenu();
     });
   </script>
 </body>

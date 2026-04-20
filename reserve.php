@@ -31,17 +31,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_staff') {
     $day_of_week = $day_map[$english_day] ?? $english_day;
     $time_check  = date('H:i:s', strtotime($waktu_mulai));
 
-$staff_result = mysqli_query($conn, "
-    SELECT st.id_staff AS id_staf, st.nama_staff AS nama_staf
-    FROM staffs st
-    JOIN staff_schedules ss ON st.id_staff = ss.id_staff
-    JOIN services sv ON sv.id_specialization = st.id_specialization
-    WHERE st.is_active = 1
-      AND sv.id_service = $service_id
-      AND ss.hari = '$day_of_week'
-      AND '$time_check' BETWEEN ss.jam_mulai AND ss.jam_selesai
-    ORDER BY RAND()
-    LIMIT 1");
+    $staff_result = mysqli_query($conn, "
+        SELECT st.id_staff AS id_staf, st.nama_staff AS nama_staf
+        FROM staffs st
+        JOIN staff_schedules ss ON st.id_staff = ss.id_staff
+        JOIN services sv ON sv.id_specialization = st.id_specialization
+        WHERE st.is_active = 1
+          AND sv.id_service = $service_id
+          AND ss.hari = '$day_of_week'
+          AND '$time_check' BETWEEN ss.jam_mulai AND ss.jam_selesai
+        ORDER BY RAND()
+        LIMIT 1");
     $staff = mysqli_fetch_assoc($staff_result);
 
     $dur_row   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT durasi_estimasi FROM services WHERE id_service = $service_id"));
@@ -180,6 +180,7 @@ if (isset($_POST['reserve'])) {
 
     .nav-spacer { flex: 1; }
 
+    /* ── Theme Toggle ── */
     .theme-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
     .toggle-label {
       font-size: .78rem; font-weight: 600; letter-spacing: .08em;
@@ -200,6 +201,78 @@ if (isset($_POST['reserve'])) {
       transition: transform var(--transition);
     }
     .toggle-track.on .toggle-knob { transform: translateX(22px); }
+
+    /* ── Hamburger ── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 40px; height: 40px;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+      margin-left: 12px;
+      border-radius: 8px;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .hamburger:hover { background: var(--border); }
+    .hamburger span {
+      display: block;
+      width: 22px; height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: transform .3s, opacity .3s, background var(--transition);
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── Mobile Menu Drawer ── */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: var(--nav-h); left: 0; right: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      z-index: 1002;
+      padding: 12px 0 20px;
+      transform: translateY(-8px);
+      opacity: 0;
+      transition: transform .3s, opacity .3s, background var(--transition);
+    }
+    .mobile-menu.open { transform: translateY(0); opacity: 1; }
+    .mobile-menu ul { list-style: none; padding: 0; }
+    .mobile-menu ul li a {
+      display: block;
+      padding: 14px 24px;
+      font-size: .95rem; font-weight: 500;
+      letter-spacing: .03em; text-transform: uppercase;
+      color: var(--text-sub);
+      border-left: 3px solid transparent;
+      transition: color .2s, background .2s, border-color .2s;
+    }
+    .mobile-menu ul li a:hover,
+    .mobile-menu ul li a.active {
+      color: var(--accent);
+      background: var(--accent-lt);
+      border-left-color: var(--accent);
+    }
+    .mobile-menu-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+    .mobile-menu-footer span {
+      font-size: .8rem; color: var(--text-sub); font-weight: 500;
+    }
 
     /* ── Background ── */
     .bg-image {
@@ -256,15 +329,13 @@ if (isset($_POST['reserve'])) {
       font-size: .87rem; color: var(--text-sub); line-height: 1.5;
     }
 
-    /* ── Two-column layout: left fixed, right fills ── */
+    /* ── Two-column layout ── */
     .reserve-inner {
       display: grid;
       grid-template-columns: 400px 1fr;
       align-items: start;
       position: relative;
     }
-
-    /* vertical divider line */
     .reserve-inner::after {
       content: '';
       position: absolute;
@@ -274,14 +345,12 @@ if (isset($_POST['reserve'])) {
       background: var(--border);
       pointer-events: none;
     }
-
     .reserve-left {
       display: flex;
       flex-direction: column;
       gap: 15px;
       padding-right: 44px;
     }
-
     .reserve-right {
       display: flex;
       flex-direction: column;
@@ -337,7 +406,6 @@ if (isset($_POST['reserve'])) {
     }
     .input-wrap:focus-within .input-icon,
     .input-wrap:focus-within .input-icon-top { stroke: var(--accent); }
-
     .select-wrap::after {
       content: '';
       position: absolute; right: 13px; top: 50%;
@@ -359,7 +427,6 @@ if (isset($_POST['reserve'])) {
     .service-scroll {
       overflow-y: auto;
       overflow-x: hidden;
-      /* height = fills remaining space in right column */
       max-height: 340px;
       padding-right: 4px;
       scrollbar-width: thin;
@@ -367,9 +434,7 @@ if (isset($_POST['reserve'])) {
     }
     .service-scroll::-webkit-scrollbar { width: 4px; }
     .service-scroll::-webkit-scrollbar-track { background: transparent; }
-    .service-scroll::-webkit-scrollbar-thumb {
-      background: var(--border); border-radius: 999px;
-    }
+    .service-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
     .service-scroll::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
     /* ── Service picker: 3 columns ── */
@@ -377,6 +442,7 @@ if (isset($_POST['reserve'])) {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
+       align-items: stretch;
     }
     .service-option { position: relative; cursor: pointer; }
     .service-option input[type="radio"] {
@@ -390,6 +456,7 @@ if (isset($_POST['reserve'])) {
       transition: border-color .2s, background .2s, box-shadow .2s, transform .15s;
       cursor: pointer;
       min-height: 86px;
+      height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -455,7 +522,6 @@ if (isset($_POST['reserve'])) {
     .btn-primary:disabled {
       opacity: .5; cursor: not-allowed; transform: none; box-shadow: none;
     }
-
     .spinner {
       width: 15px; height: 15px;
       border: 2px solid rgba(255,255,255,.4);
@@ -522,10 +588,14 @@ if (isset($_POST['reserve'])) {
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Responsive ── */
+    /* ════════════════════════════════
+       RESPONSIVE
+    ════════════════════════════════ */
+
     @media (max-width: 1080px) {
       .nav-links { gap: 22px; margin-left: 28px; }
     }
+
     @media (max-width: 960px) {
       .reserve-inner { grid-template-columns: 1fr; }
       .reserve-inner::after { display: none; }
@@ -533,28 +603,72 @@ if (isset($_POST['reserve'])) {
       .reserve-right { padding-left: 0; padding-top: 22px; border-top: 1px solid var(--border); }
       .service-scroll { max-height: 240px; }
     }
+
     @media (max-width: 768px) {
+      :root { --nav-h: 64px; }
       body { overflow: auto; }
-      .page-wrapper { height: auto; overflow: visible; padding: 24px 4% 60px; }
-      .reserve-card { padding: 28px 22px; }
-      .service-picker { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 620px) {
+      .page-wrapper { height: auto; overflow: visible; padding: 16px 4% 60px; }
+      .reserve-card { padding: 22px 16px; border-radius: 18px; }
+
+      /* Sembunyikan nav links desktop, tampilkan hamburger */
       .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .mobile-menu { display: block; }
+
+      /* Layout mobile: grid 2 kolom untuk left panel */
+      .reserve-inner { grid-template-columns: 1fr; }
+      .reserve-left {
+        padding-right: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      /* Your Pet → kolom 1 */
+      .reserve-left .form-group:nth-child(1) { grid-column: 1 / -1; }
+      /* Date & Time → full width */
+      .reserve-left .form-group:nth-child(2) { grid-column: 1 / -1; }
+      .reserve-left .form-group:nth-child(3) { grid-column: 1 / -1; }
+
+      /* Info panels, hidden inputs, button: full width */
+      .reserve-left .info-panel { grid-column: 1 / -1; }
+      .reserve-left input[type="hidden"] { grid-column: 1 / -1; }
+      .reserve-left .btn-primary { grid-column: 1 / -1; }
+
+      /* Textarea lebih pendek di mobile */
+      .form-group textarea { height: 62px; }
+
+      /* Service: tetap 3 kolom di mobile */
+      .reserve-right { padding-left: 0; padding-top: 18px; border-top: 1px solid var(--border); }
+      .service-scroll { max-height: none; overflow-y: visible; overflow-x: hidden; }
+      .service-picker { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .service-card { min-height: 76px; padding: 10px 9px; }
+      .service-name { font-size: .76rem; }
+      .service-meta { font-size: .65rem; }
+      .service-price { font-size: .76rem; margin-top: 4px; }
     }
+
     @media (max-width: 420px) {
-      .service-picker { grid-template-columns: 1fr; }
+      .reserve-card { padding: 18px 12px; }
+      .service-picker { gap: 6px; }
+      .service-card { padding: 8px 7px; min-height: 68px; }
+      .service-name { font-size: .71rem; }
+      .service-meta { font-size: .60rem; }
+      .service-price { font-size: .71rem; }
+      .toggle-label { display: none; }
     }
   </style>
 </head>
 <body>
 
-<!-- NAVBAR -->
+<!-- ══════════ NAVBAR ══════════ -->
 <nav class="navbar">
   <a href="index.php" class="nav-logo">
     <img src="assets/logolm.png" alt="CatDogKu" class="logo-light" />
     <img src="assets/logodm.png" alt="CatDogKu" class="logo-dark" />
   </a>
+
+  <!-- Desktop Links -->
   <ul class="nav-links">
     <li><a href="index.php#home">Home</a></li>
     <li><a href="index.php#about">About</a></li>
@@ -563,18 +677,44 @@ if (isset($_POST['reserve'])) {
     <li><a href="cust_profile.php">Profile</a></li>
     <li><a href="index.php#contact">Contact</a></li>
   </ul>
+
   <div class="nav-spacer"></div>
+
+  <!-- Theme Toggle -->
   <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="Toggle dark mode">
     <span class="toggle-label" id="toggleLabel">OFF</span>
     <div class="toggle-track" id="toggleTrack"><div class="toggle-knob"></div></div>
   </div>
+
+  <!-- Hamburger (mobile only) -->
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
-<!-- BACKGROUND -->
+<!-- ══════════ MOBILE MENU ══════════ -->
+<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <ul>
+    <li><a href="index.php#home" onclick="closeMenu()">Home</a></li>
+    <li><a href="index.php#about" onclick="closeMenu()">About</a></li>
+    <li><a href="index.php#service" onclick="closeMenu()">Service</a></li>
+    <li><a href="reserve.php" class="active" onclick="closeMenu()">Reserve</a></li>
+    <li><a href="cust_profile.php" onclick="closeMenu()">Profile</a></li>
+    <li><a href="index.php#contact" onclick="closeMenu()">Contact</a></li>
+  </ul>
+  <div class="mobile-menu-footer">
+    <span>Dark Mode</span>
+    <div class="theme-toggle" id="themeToggleMobile" role="button" tabindex="0" aria-label="Toggle dark mode">
+      <div class="toggle-track" id="toggleTrackMobile"><div class="toggle-knob"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BACKGROUND ══════════ -->
 <div class="bg-image"></div>
 <div class="bg-overlay"></div>
 
-<!-- MAIN -->
+<!-- ══════════ MAIN ══════════ -->
 <div class="page-wrapper">
   <div class="reserve-card">
 
@@ -586,10 +726,10 @@ if (isset($_POST['reserve'])) {
     <form id="reserveForm">
       <div class="reserve-inner">
 
-        <!-- ── LEFT: Pet · DateTime · Notes · Info · Submit ── -->
+        <!-- ── LEFT: Pet · Notes · DateTime · Info · Submit ── -->
         <div class="reserve-left">
 
-          <!-- Pet -->
+          <!-- Pet (grid col 1 on mobile) -->
           <div class="form-group">
             <label for="id_hewan">Your Pet</label>
             <div class="input-wrap select-wrap">
@@ -612,9 +752,9 @@ if (isset($_POST['reserve'])) {
             </div>
           </div>
 
-          <!-- Date & Time -->
+          <!-- Date & Time (full width on mobile) -->
           <div class="form-group">
-            <label for="waktu_mulai">Date & Start Time</label>
+            <label for="waktu_mulai">Date &amp; Start Time</label>
             <div class="input-wrap">
               <svg class="input-icon" viewBox="0 0 24 24">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -626,7 +766,7 @@ if (isset($_POST['reserve'])) {
             </div>
           </div>
 
-          <!-- Notes -->
+          <!-- Additional Notes (grid col 2 on mobile) -->
           <div class="form-group">
             <label for="catatan_reservasi">Additional Notes</label>
             <div class="input-wrap">
@@ -642,7 +782,7 @@ if (isset($_POST['reserve'])) {
             </div>
           </div>
 
-          <!-- Staff info -->
+          <!-- Staff info panel -->
           <div class="info-panel" id="infoPanel">
             <div class="info-row">
               <svg viewBox="0 0 24 24">
@@ -685,13 +825,12 @@ if (isset($_POST['reserve'])) {
 
         </div><!-- /reserve-left -->
 
-        <!-- ── RIGHT: Service picker (3×3 scrollable) ── -->
+        <!-- ── RIGHT: Service picker ── -->
         <div class="reserve-right">
-  <div style="display:flex; align-items:center; justify-content:space-between;">
-    <p class="service-label">Service</p>
-    <a href="detail_reserve.php" class="card-label" style="margin-bottom:0; cursor:pointer;">All Reserve</a>
-  </div>
-          <!-- Only this div scrolls -->
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <p class="service-label">Service</p>
+            <a href="detail_reserve.php" class="card-label" style="margin-bottom:0; cursor:pointer;">All Reserve</a>
+          </div>
           <div class="service-scroll">
             <div class="service-picker">
               <?php foreach ($services as $svc): ?>
@@ -714,7 +853,7 @@ if (isset($_POST['reserve'])) {
   </div>
 </div>
 
-<!-- POPUP -->
+<!-- ══════════ POPUP ══════════ -->
 <div class="popup-overlay" id="popupOverlay">
   <div class="popup-card">
     <button class="popup-close" id="popupClose" aria-label="Close">
@@ -734,24 +873,58 @@ if (isset($_POST['reserve'])) {
 </div>
 
 <script>
+  /* ── Hamburger / Mobile Menu ── */
+  const hamburger  = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  let menuOpen = false;
+
+  function closeMenu() {
+    menuOpen = false;
+    hamburger.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    mobileMenu.classList.remove('open');
+    mobileMenu.setAttribute('aria-hidden', 'true');
+  }
+
+  hamburger.addEventListener('click', () => {
+    menuOpen = !menuOpen;
+    hamburger.classList.toggle('open', menuOpen);
+    hamburger.setAttribute('aria-expanded', String(menuOpen));
+    mobileMenu.classList.toggle('open', menuOpen);
+    mobileMenu.setAttribute('aria-hidden', String(!menuOpen));
+  });
+
+  document.addEventListener('click', e => {
+    if (menuOpen && !hamburger.contains(e.target) && !mobileMenu.contains(e.target)) closeMenu();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+
   /* ── Theme ── */
-  const html   = document.documentElement;
-  const toggle = document.getElementById('themeToggle');
-  const track  = document.getElementById('toggleTrack');
-  const label  = document.getElementById('toggleLabel');
+  const html            = document.documentElement;
+  const toggleDesktop   = document.getElementById('themeToggle');
+  const track           = document.getElementById('toggleTrack');
+  const label           = document.getElementById('toggleLabel');
+  const toggleMobile    = document.getElementById('themeToggleMobile');
+  const trackMobile     = document.getElementById('toggleTrackMobile');
 
   function applyTheme(dark) {
     html.setAttribute('data-theme', dark ? 'dark' : 'light');
     track.classList.toggle('on', dark);
-    label.textContent = dark ? 'ON' : 'OFF';
+    if (trackMobile) trackMobile.classList.toggle('on', dark);
+    if (label) label.textContent = dark ? 'ON' : 'OFF';
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }
+  function toggleTheme() { applyTheme(html.getAttribute('data-theme') !== 'dark'); }
+
   const saved = localStorage.getItem('theme');
   applyTheme(saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
-  toggle.addEventListener('click', () => applyTheme(html.getAttribute('data-theme') !== 'dark'));
-  toggle.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applyTheme(html.getAttribute('data-theme') !== 'dark'); }
-  });
+
+  toggleDesktop.addEventListener('click', toggleTheme);
+  toggleDesktop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTheme(); } });
+  if (toggleMobile) {
+    toggleMobile.addEventListener('click', toggleTheme);
+    toggleMobile.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTheme(); } });
+  }
 
   /* ── Staff lookup ── */
   const serviceInputs     = document.querySelectorAll('input[name="id_service"]');
@@ -810,7 +983,6 @@ if (isset($_POST['reserve'])) {
   const form         = document.getElementById('reserveForm');
   const btnText      = document.getElementById('btnText');
   const btnSpinner   = document.getElementById('btnSpinner');
-  const btnArrow     = document.getElementById('btnArrow');
   const popupOverlay = document.getElementById('popupOverlay');
   const popupClose   = document.getElementById('popupClose');
 
@@ -818,7 +990,6 @@ if (isset($_POST['reserve'])) {
     e.preventDefault();
     btnText.textContent = 'Reserving...';
     btnSpinner.style.display = 'block';
-    if (btnArrow) btnArrow.style.display = 'none';
     reserveBtn.disabled = true;
 
     const formData = new FormData(form);
@@ -833,7 +1004,6 @@ if (isset($_POST['reserve'])) {
           alert('Error: ' + (data.error || 'Something went wrong.'));
           btnText.textContent = 'Confirm Reservation';
           btnSpinner.style.display = 'none';
-          btnArrow.style.display   = '';
           reserveBtn.disabled = false;
         }
       })
@@ -841,7 +1011,6 @@ if (isset($_POST['reserve'])) {
         alert('Network error. Please try again.');
         btnText.textContent = 'Confirm Reservation';
         btnSpinner.style.display = 'none';
-        btnArrow.style.display   = '';
         reserveBtn.disabled = false;
       });
   });

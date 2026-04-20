@@ -19,17 +19,17 @@ if(isset($_POST['change_phone'])){
 
         $id = $_SESSION['customer_id'];
 
-        // Verify email matches the logged-in user
-        $check = mysqli_query($conn, "SELECT * FROM user WHERE id_user='$id' AND email='$email'");
+        // Verify email matches the logged-in customer
+        $check = mysqli_query($conn, "SELECT * FROM customer WHERE id_pelanggan='$id' AND email='$email'");
 
         if(mysqli_num_rows($check) > 0){
 
             // Check if new phone is already used by another account
-            $phone_check = mysqli_query($conn, "SELECT * FROM user WHERE no_telepon='$new_phone' AND id_user != '$id'");
+            $phone_check = mysqli_query($conn, "SELECT * FROM customer WHERE no_telepon='$new_phone' AND id_pelanggan != '$id'");
             if(mysqli_num_rows($phone_check) > 0){
                 echo "<script>alert('Phone number is already registered to another account.');</script>";
             } else {
-                $update = mysqli_query($conn, "UPDATE user SET no_telepon='$new_phone' WHERE id_user='$id' AND email='$email'");
+                $update = mysqli_query($conn, "UPDATE customer SET no_telepon='$new_phone' WHERE id_pelanggan='$id' AND email='$email'");
                 if($update){
                     echo "<script>alert('Phone number updated successfully!'); window.location='cust_profile.php';</script>";
                 } else {

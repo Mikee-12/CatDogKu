@@ -202,7 +202,7 @@ if(!isset($_SESSION['customer_id'])){
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       box-shadow: 0 8px 32px rgba(0,0,0,.12);
-      z-index: 999;
+      z-index: 1002;
       padding: 12px 0 20px;
       transform: translateY(-8px);
       opacity: 0;

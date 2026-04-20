@@ -40,12 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
 
-    // Check if payment record exists
     $check = mysqli_query($conn, "SELECT id_payment FROM payments WHERE id_reservation = $id_reservation LIMIT 1");
     $metode_esc  = mysqli_real_escape_string($conn, $metode_bayar);
     $bukti_esc   = $bukti_path ? "'" . mysqli_real_escape_string($conn, $bukti_path) . "'" : "NULL";
 
-    // Calculate total_bayar from reservation_details subtotal
     $total_bayar = 0;
     $query_total = "SELECT SUM(subtotal) AS total FROM reservation_details WHERE id_reservation = $id_reservation";
     $result_total = mysqli_query($conn, $query_total);
@@ -71,14 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cancel') {
     $id_reservation = (int)$_POST['id_reservation'];
 
-    // Verify ownership
     $check_owner = mysqli_query($conn, "SELECT id_reservation FROM reservations WHERE id_reservation = $id_reservation AND id_user = $customer_id LIMIT 1");
     if (mysqli_num_rows($check_owner) === 0) {
         echo json_encode(['success' => false, 'message' => 'Reservation not found or access denied.']);
         exit;
     }
 
-    // Delete in order: payments, reservation_details, reservations
     mysqli_query($conn, "DELETE FROM payments WHERE id_reservation = $id_reservation");
     mysqli_query($conn, "DELETE FROM reservation_details WHERE id_reservation = $id_reservation");
     mysqli_query($conn, "DELETE FROM reservations WHERE id_reservation = $id_reservation");
@@ -102,78 +98,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-// ── AUTO STATUS UPDATE (called from JS polling) ──
+// AUTO STATUS UPDATE (polling)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'auto_update_status') {
     $now = date('Y-m-d H:i:s');
-
-    // confirmed → in_progress: service has started
-    mysqli_query($conn, "
-        UPDATE reservations
-        SET status = 'in_progress'
-        WHERE id_user = $customer_id
-          AND status = 'confirmed'
-          AND waktu_mulai <= '$now'
-          AND waktu_selesai > '$now'
-    ");
-
-    // confirmed/in_progress → completed: service has ended
-    mysqli_query($conn, "
-        UPDATE reservations
-        SET status = 'completed'
-        WHERE id_user = $customer_id
-          AND status IN ('confirmed', 'in_progress')
-          AND waktu_selesai <= '$now'
-    ");
-
+    mysqli_query($conn, "UPDATE reservations SET status = 'in_progress' WHERE id_user = $customer_id AND status = 'confirmed' AND waktu_mulai <= '$now' AND waktu_selesai > '$now'");
+    mysqli_query($conn, "UPDATE reservations SET status = 'completed' WHERE id_user = $customer_id AND status IN ('confirmed', 'in_progress') AND waktu_selesai <= '$now'");
     echo json_encode(['success' => true]);
     exit;
 }
 
-// ── AUTO STATUS UPDATE ON PAGE LOAD ──
+// AUTO STATUS UPDATE ON PAGE LOAD
 $now = date('Y-m-d H:i:s');
+mysqli_query($conn, "UPDATE reservations SET status = 'in_progress' WHERE id_user = $customer_id AND status = 'confirmed' AND waktu_mulai <= '$now' AND waktu_selesai > '$now'");
+mysqli_query($conn, "UPDATE reservations SET status = 'completed' WHERE id_user = $customer_id AND status IN ('confirmed', 'in_progress') AND waktu_selesai <= '$now'");
 
-// confirmed → in_progress
-mysqli_query($conn, "
-    UPDATE reservations
-    SET status = 'in_progress'
-    WHERE id_user = $customer_id
-      AND status = 'confirmed'
-      AND waktu_mulai <= '$now'
-      AND waktu_selesai > '$now'
-");
-
-// confirmed/in_progress → completed
-mysqli_query($conn, "
-    UPDATE reservations
-    SET status = 'completed'
-    WHERE id_user = $customer_id
-      AND status IN ('confirmed', 'in_progress')
-      AND waktu_selesai <= '$now'
-");
-
-// Fetch all customer reservations with details
+// Fetch all customer reservations
 $query = "
     SELECT
-        r.id_reservation,
-        r.waktu_mulai,
-        r.waktu_selesai,
-        r.status,
-        r.catatan,
-        r.created_at,
-        p.nama_pet,
-        sp.nama_species,
-        br.nama_breed,
-        sv.nama_service,
-        sv.harga_base,
-        sv.durasi_estimasi,
-        st.nama_staff,
-        st.jabatan,
-        rd.price_snapshot,
-        rd.subtotal,
-        pay.status_bayar,
-        pay.metode_bayar,
-        pay.tgl_bayar,
-        pay.total_bayar
+        r.id_reservation, r.waktu_mulai, r.waktu_selesai, r.status, r.catatan, r.created_at,
+        p.nama_pet, sp.nama_species, br.nama_breed,
+        sv.nama_service, sv.harga_base, sv.durasi_estimasi,
+        st.nama_staff, st.jabatan,
+        rd.price_snapshot, rd.subtotal,
+        pay.status_bayar, pay.metode_bayar, pay.tgl_bayar, pay.total_bayar
     FROM reservations r
     LEFT JOIN pets p          ON r.id_pet = p.id_pet
     LEFT JOIN breeds br       ON p.id_breed = br.id_breed
@@ -206,11 +153,7 @@ function statusBadge($status) {
 
 function payBadge($status) {
     if (!$status) return '<span class="badge badge-pending">Unpaid</span>';
-    $map = [
-        'unpaid'  => 'badge-cancelled',
-        'partial' => 'badge-progress',
-        'paid'    => 'badge-completed',
-    ];
+    $map = ['unpaid' => 'badge-cancelled', 'partial' => 'badge-progress', 'paid' => 'badge-completed'];
     $cls = $map[$status] ?? 'badge-pending';
     return '<span class="badge ' . $cls . '">' . ucfirst($status) . '</span>';
 }
@@ -237,7 +180,7 @@ function payBadge($status) {
       --accent:     #4caf50;
       --accent-dk:  #388e3c;
       --accent-lt:  #e8f5e9;
-      --nav-h:      72px;
+      --nav-h:      64px;
       --radius:     14px;
       --shadow:     0 4px 24px rgba(0,0,0,.08);
       --transition: .35s cubic-bezier(.4,0,.2,1);
@@ -281,18 +224,19 @@ function payBadge($status) {
       transition: background var(--transition), border-color var(--transition);
     }
     .nav-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .nav-logo img { height: 42px; width: auto; }
+    .nav-logo img { height: 40px; width: auto; }
     [data-theme="light"] .logo-dark  { display: none; }
     [data-theme="dark"]  .logo-light { display: none; }
 
     .nav-links {
-      display: flex; align-items: center; gap: 36px;
-      list-style: none; margin-left: 52px;
+      display: flex; align-items: center; gap: 32px;
+      list-style: none; margin-left: 48px;
     }
     .nav-links a {
-      font-size: .92rem; font-weight: 500; letter-spacing: .04em;
+      font-size: .88rem; font-weight: 500; letter-spacing: .04em;
       text-transform: uppercase; color: var(--text-sub);
       position: relative; transition: color var(--transition);
+      white-space: nowrap;
     }
     .nav-links a::after {
       content: ''; position: absolute; left: 0; bottom: -4px;
@@ -303,26 +247,84 @@ function payBadge($status) {
     .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
     .nav-spacer { flex: 1; }
 
+    /* ── Theme Toggle ── */
     .theme-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
     .toggle-label {
-      font-size: .78rem; font-weight: 600; letter-spacing: .08em;
+      font-size: .75rem; font-weight: 600; letter-spacing: .08em;
       text-transform: uppercase; color: var(--text-sub);
-      transition: color var(--transition); width: 28px; text-align: right;
+      width: 28px; text-align: right;
     }
     .toggle-track {
-      position: relative; width: 48px; height: 26px;
+      position: relative; width: 44px; height: 24px;
       background: var(--border); border-radius: 999px;
-      transition: background var(--transition), border-color var(--transition);
       border: 2px solid var(--border); cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
     }
     .toggle-track.on { background: var(--accent); border-color: var(--accent); }
     .toggle-knob {
       position: absolute; top: 2px; left: 2px;
-      width: 18px; height: 18px; border-radius: 50%;
+      width: 16px; height: 16px; border-radius: 50%;
       background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.2);
       transition: transform var(--transition);
     }
-    .toggle-track.on .toggle-knob { transform: translateX(22px); }
+    .toggle-track.on .toggle-knob { transform: translateX(20px); }
+
+    /* ── Hamburger ── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 40px; height: 40px;
+      gap: 5px; cursor: pointer;
+      background: none; border: none; padding: 4px;
+      margin-left: 12px; border-radius: 8px;
+      transition: background .2s;
+    }
+    .hamburger:hover { background: var(--border); }
+    .hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: var(--text); border-radius: 2px;
+      transition: transform .3s, opacity .3s, background var(--transition);
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── Mobile Menu ── */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: var(--nav-h); left: 0; right: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      z-index: 999;
+      pointer-events: none;  
+      padding: 12px 0 20px;
+      transform: translateY(-8px); opacity: 0;
+      transition: transform .3s, opacity .3s, background var(--transition);
+    }
+    .mobile-menu.open { transform: translateY(0); opacity: 1;pointer-events: all; }
+    .mobile-menu ul { list-style: none; padding: 0; }
+    .mobile-menu ul li a {
+      display: block; padding: 14px 24px;
+      font-size: .95rem; font-weight: 500;
+      letter-spacing: .03em; text-transform: uppercase;
+      color: var(--text-sub);
+      border-left: 3px solid transparent;
+      transition: color .2s, background .2s, border-color .2s;
+    }
+    .mobile-menu ul li a:hover,
+    .mobile-menu ul li a.active {
+      color: var(--accent); background: var(--accent-lt); border-left-color: var(--accent);
+    }
+    .mobile-menu-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px 0;
+      border-top: 1px solid var(--border); margin-top: 8px;
+    }
+    .mobile-menu-footer span { font-size: .8rem; color: var(--text-sub); font-weight: 500; }
 
     /* ── Background ── */
     .bg-image {
@@ -341,21 +343,21 @@ function payBadge($status) {
       background: linear-gradient(100deg, rgba(0,0,0,.55) 35%, rgba(0,0,0,.15) 75%);
     }
 
-    /* ── Page ── */
+    /* ── Page wrapper — reduced top padding ── */
     .page-wrapper {
       margin-top: var(--nav-h);
       position: relative;
       z-index: 2;
-      padding: 48px 5% 80px;
+      padding: 24px 5% 80px;
       max-width: 1200px;
       margin-left: auto;
       margin-right: auto;
     }
 
-    /* ── Page header ── */
+    /* ── Page header — reduced spacing ── */
     .page-header {
-      padding-top: 40px;
-      margin-bottom: 40px;
+      padding-top: 16px;
+      margin-bottom: 24px;
       animation: fadeUp .6s both;
     }
     .page-label {
@@ -374,7 +376,7 @@ function payBadge($status) {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
       animation: fadeUp .6s .1s both;
     }
     .stat-card {
@@ -390,7 +392,7 @@ function payBadge($status) {
 
     /* ── Filter tabs ── */
     .filter-row {
-      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
       animation: fadeUp .6s .15s both;
     }
     .filter-btn {
@@ -401,10 +403,7 @@ function payBadge($status) {
       cursor: pointer; transition: all .2s; letter-spacing: .03em;
     }
     .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .filter-btn.active {
-      background: var(--accent); border-color: var(--accent);
-      color: #fff;
-    }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
     /* ── Empty state ── */
     .empty-state {
@@ -440,12 +439,10 @@ function payBadge($status) {
       overflow: hidden;
       transition: background var(--transition), border-color var(--transition), box-shadow .2s;
       cursor: pointer;
+      position: relative;
+z-index: 2;
     }
-    .res-card:hover {
-      box-shadow: 0 8px 32px rgba(0,0,0,.1);
-      border-color: var(--accent);
-    }
-
+    .res-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,.1); border-color: var(--accent); }
     .res-card-body { padding: 20px 24px; }
 
     .res-header {
@@ -455,7 +452,6 @@ function payBadge($status) {
     .res-id { display: none; }
     .res-service-name { font-size: 1.05rem; font-weight: 600; color: var(--text); }
     .res-header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
-
     .res-badges-row { display: flex; align-items: center; gap: 6px; }
 
     .badge {
@@ -468,11 +464,9 @@ function payBadge($status) {
     .badge-completed { background: #d1fae5; color: #065f46; }
     .badge-cancelled { background: #fee2e2; color: #991b1b; }
 
-    /* ── Pay button ── */
     .btn-pay {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 12px;
-      background: var(--accent); color: #fff;
+      padding: 4px 12px; background: var(--accent); color: #fff;
       border-radius: 999px; border: none;
       font-family: 'DM Sans', sans-serif; font-size: .7rem; font-weight: 700;
       letter-spacing: .06em; text-transform: uppercase;
@@ -482,11 +476,9 @@ function payBadge($status) {
     .btn-pay:hover { background: var(--accent-dk); box-shadow: 0 4px 14px rgba(76,175,80,.45); }
     .btn-pay svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2.5; }
 
-    /* ── Cancel button ── */
     .btn-cancel {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 12px;
-      background: #ef4444; color: #fff;
+      padding: 4px 12px; background: #ef4444; color: #fff;
       border-radius: 999px; border: none;
       font-family: 'DM Sans', sans-serif; font-size: .7rem; font-weight: 700;
       letter-spacing: .06em; text-transform: uppercase;
@@ -497,13 +489,11 @@ function payBadge($status) {
     .btn-cancel svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2.5; }
 
     .res-info-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; padding-top: 16px; border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 2;
     }
-    .res-info-item {}
     .res-info-label {
       font-size: .67rem; font-weight: 600; letter-spacing: .08em;
       text-transform: uppercase; color: var(--text-sub); margin-bottom: 3px;
@@ -511,53 +501,31 @@ function payBadge($status) {
     .res-info-value { font-size: .85rem; color: var(--text); font-weight: 500; }
     .res-info-value.price { color: var(--accent); font-weight: 700; }
 
-    /* ── Schedule clickable ── */
     .schedule-clickable {
-      cursor: pointer;
-      color: var(--accent);
-      text-decoration: underline dotted;
-      text-underline-offset: 3px;
-      transition: color .2s;
-      display: inline-flex; align-items: center; gap: 4px;
+      cursor: pointer; color: var(--accent);
+      text-decoration: underline dotted; text-underline-offset: 3px;
+      transition: color .2s; display: inline-flex; align-items: center; gap: 4px;
     }
     .schedule-clickable:hover { color: var(--accent-dk); }
     .schedule-clickable svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
 
-    /* expand panel */
     .res-expand {
-      max-height: 0;
-      overflow: hidden;
+      max-height: 0; overflow: hidden;
       transition: max-height 0.35s cubic-bezier(.4,0,.2,1);
       border-top: 1px dashed transparent;
     }
-    .res-expand.open {
-      max-height: 1000px;
-      border-top-color: var(--border);
-    }
+    .res-expand.open { max-height: 1000px; border-top-color: var(--border); }
+    .res-expand .expand-grid, .res-expand .notes-box { margin: 0 24px; }
+    .res-expand .expand-grid { padding-top: 20px; padding-bottom: 20px; }
 
-    .res-expand .expand-grid,
-    .res-expand .notes-box {
-      margin: 0 24px;
-    }
-    .res-expand .expand-grid {
-      padding-top: 20px;
-      padding-bottom: 20px;
-    }
-    .expand-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      padding-top: 20px;
-    }
+    .expand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 20px; }
     .expand-section-title {
       font-size: .7rem; font-weight: 700; letter-spacing: .1em;
-      text-transform: uppercase; color: var(--accent);
-      margin-bottom: 10px;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
     }
     .expand-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 7px 0; border-bottom: 1px solid var(--border);
-      font-size: .84rem;
+      padding: 7px 0; border-bottom: 1px solid var(--border); font-size: .84rem;
     }
     .expand-row:last-child { border-bottom: none; }
     .expand-row-label { color: var(--text-sub); }
@@ -565,13 +533,9 @@ function payBadge($status) {
     .expand-row-value.price { color: var(--accent); font-weight: 700; }
 
     .notes-box {
-      margin-top: 16px;
-      background: var(--bg2);
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-size: .84rem;
-      color: var(--text-sub);
-      line-height: 1.6;
+      margin-top: 16px; background: var(--bg2);
+      border-radius: 10px; padding: 12px 16px;
+      font-size: .84rem; color: var(--text-sub); line-height: 1.6;
     }
     .notes-label {
       font-size: .67rem; font-weight: 700; letter-spacing: .1em;
@@ -579,55 +543,35 @@ function payBadge($status) {
     }
 
     .chevron {
-      width: 16px; height: 16px;
-      stroke: var(--text-sub); fill: none; stroke-width: 2;
-      transition: transform .3s;
-      flex-shrink: 0;
+      width: 16px; height: 16px; stroke: var(--text-sub); fill: none; stroke-width: 2;
+      transition: transform .3s; flex-shrink: 0;
     }
     .res-card.expanded .chevron { transform: rotate(180deg); }
 
-    /* ── Status pulse animation for in_progress ── */
-    @keyframes statusPulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: .55; }
-    }
-    .badge-progress-live {
-      animation: statusPulse 1.8s ease-in-out infinite;
-    }
+    @keyframes statusPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+    .badge-progress-live { animation: statusPulse 1.8s ease-in-out infinite; }
 
-    /* ══════════════════════════════════════════
-       PAYMENT MODAL
-    ══════════════════════════════════════════ */
+    /* ── Modals ── */
     .modal-backdrop {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.65);
-      backdrop-filter: blur(6px);
-      z-index: 9000;
+      position: fixed; inset: 0; background: rgba(0,0,0,.65);
+      backdrop-filter: blur(6px); z-index: 9000;
       display: flex; align-items: center; justify-content: center;
-      padding: 16px;
-      opacity: 0; pointer-events: none;
-      transition: opacity .3s;
+      padding: 16px; opacity: 0; pointer-events: none; transition: opacity .3s;
     }
     .modal-backdrop.open { opacity: 1; pointer-events: all; }
-
     .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      width: 100%; max-width: 520px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; width: 100%; max-width: 520px;
       max-height: 90vh; overflow-y: auto;
       box-shadow: 0 24px 64px rgba(0,0,0,.3);
       transform: translateY(24px) scale(.97);
       transition: transform .3s, opacity .3s;
     }
     .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
-
     .modal-header {
-      padding: 24px 28px 16px;
-      border-bottom: 1px solid var(--border);
+      padding: 24px 28px 16px; border-bottom: 1px solid var(--border);
       display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
     }
-    .modal-title-wrap {}
     .modal-label { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 3px; }
     .modal-title { font-family: 'Playfair Display', serif; font-size: 1.35rem; color: var(--text); }
     .modal-close {
@@ -637,29 +581,27 @@ function payBadge($status) {
     }
     .modal-close:hover { background: var(--bg2); border-color: var(--accent); }
     .modal-close svg { width: 14px; height: 14px; stroke: var(--text-sub); fill: none; stroke-width: 2.2; }
-
     .modal-body { padding: 20px 28px 28px; }
+    .modal-footer {
+      padding: 16px 28px 24px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px; align-items: center; justify-content: flex-end;
+    }
 
     .pay-service-strip {
-      background: var(--bg2);
-      border-radius: 12px;
-      padding: 14px 16px;
+      background: var(--bg2); border-radius: 12px; padding: 14px 16px;
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 20px;
-      border: 1px solid var(--border);
+      margin-bottom: 20px; border: 1px solid var(--border);
     }
     .pay-service-name { font-size: .9rem; font-weight: 600; color: var(--text); }
-    .pay-service-id   { display: none; }
+    .pay-service-id { display: none; }
     .pay-service-price { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
-
     .method-label { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 8px; }
     .method-select {
       width: 100%; padding: 10px 14px; border-radius: 10px;
       border: 1.5px solid var(--border); background: var(--bg2);
       color: var(--text); font-family: 'DM Sans', sans-serif;
       font-size: .88rem; font-weight: 500; outline: none;
-      cursor: pointer; transition: border-color .2s;
-      margin-bottom: 16px;
+      cursor: pointer; transition: border-color .2s; margin-bottom: 16px;
     }
     .method-select:hover, .method-select:focus { border-color: var(--accent); }
     .method-select option { background: var(--surface); color: var(--text); }
@@ -668,76 +610,44 @@ function payBadge($status) {
     .pay-instructions.visible { display: block; }
 
     .transfer-info {
-      background: var(--accent-lt);
-      border: 1.5px solid var(--accent);
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 16px;
+      background: var(--accent-lt); border: 1.5px solid var(--accent);
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
     }
     .transfer-info-label { font-size: .67rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-dk); margin-bottom: 6px; }
     .transfer-number { font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: .04em; }
     .transfer-name { font-size: .8rem; color: var(--text-sub); margin-top: 2px; }
 
-    .qris-wrapper {
-      text-align: center;
-      margin-bottom: 16px;
-    }
-    .qris-wrapper img {
-      width: 180px; height: auto;
-      border-radius: 12px;
-      border: 2px solid var(--border);
-      margin: 0 auto;
-    }
+    .qris-wrapper { text-align: center; margin-bottom: 16px; }
+    .qris-wrapper img { width: 180px; height: auto; border-radius: 12px; border: 2px solid var(--border); margin: 0 auto; }
     .qris-caption { font-size: .78rem; color: var(--text-sub); margin-top: 8px; text-align: center; }
 
     .cash-info {
-      background: var(--bg2);
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 16px;
-      font-size: .86rem;
-      color: var(--text-sub);
-      line-height: 1.6;
+      background: var(--bg2); border-radius: 12px; padding: 14px 16px;
+      margin-bottom: 16px; font-size: .86rem; color: var(--text-sub); line-height: 1.6;
     }
 
     .upload-section { margin-top: 4px; }
     .upload-label { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 8px; }
     .upload-drop {
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      padding: 24px 16px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .2s, background .2s;
-      position: relative;
+      border: 2px dashed var(--border); border-radius: 12px; padding: 24px 16px;
+      text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative;
     }
     .upload-drop:hover, .upload-drop.dragover { border-color: var(--accent); background: var(--accent-lt); }
-    .upload-drop input[type="file"] {
-      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-    }
+    .upload-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
     .upload-icon { width: 36px; height: 36px; background: var(--accent-lt); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; }
     .upload-icon svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 2; }
     .upload-text { font-size: .82rem; color: var(--text-sub); }
     .upload-text strong { color: var(--accent); font-weight: 600; }
     .upload-formats { font-size: .7rem; color: var(--text-sub); margin-top: 4px; opacity: .7; }
-    .upload-preview {
-      display: none;
-      margin-top: 12px; text-align: center;
-    }
+    .upload-preview { display: none; margin-top: 12px; text-align: center; }
     .upload-preview img { max-height: 160px; border-radius: 8px; margin: 0 auto; border: 1.5px solid var(--border); }
     .upload-preview-name { font-size: .75rem; color: var(--text-sub); margin-top: 6px; }
 
-    .modal-footer {
-      padding: 16px 28px 24px;
-      border-top: 1px solid var(--border);
-      display: flex; gap: 10px; align-items: center; justify-content: flex-end;
-    }
     .btn-cancel-modal {
       padding: 10px 20px; border-radius: var(--radius);
       border: 1.5px solid var(--border); background: transparent;
       color: var(--text-sub); font-family: 'DM Sans', sans-serif;
-      font-size: .85rem; font-weight: 500; cursor: pointer;
-      transition: border-color .2s, color .2s;
+      font-size: .85rem; font-weight: 500; cursor: pointer; transition: border-color .2s, color .2s;
     }
     .btn-cancel-modal:hover { border-color: var(--accent); color: var(--accent); }
     .btn-send {
@@ -753,7 +663,6 @@ function payBadge($status) {
     .btn-send:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
     .btn-send svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; }
 
-    /* Toast */
     .toast {
       position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
       background: var(--text); color: var(--bg);
@@ -767,44 +676,25 @@ function payBadge($status) {
     .toast.success { background: var(--accent); color: #fff; }
     .toast.error   { background: #ef4444; color: #fff; }
 
-    /* ══════════════════════════════════════════
-       RESCHEDULE MODAL
-    ══════════════════════════════════════════ */
+    /* ── Reschedule modal ── */
     .reschedule-modal { max-width: 440px; }
-
     .datetime-group { margin-bottom: 16px; }
     .datetime-group label { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); margin-bottom: 6px; }
     .datetime-group input[type="datetime-local"] {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      background: var(--bg2);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: .88rem;
-      outline: none;
-      transition: border-color .2s;
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+      border-radius: 10px; background: var(--bg2); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: .88rem; outline: none; transition: border-color .2s;
     }
     .datetime-group input:focus { border-color: var(--accent); }
-
     .reschedule-note {
-      background: #fef3c7;
-      color: #92400e;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: .8rem;
-      line-height: 1.5;
-      margin-bottom: 20px;
-      display: flex; gap: 8px; align-items: flex-start;
+      background: #fef3c7; color: #92400e; border-radius: 10px;
+      padding: 10px 14px; font-size: .8rem; line-height: 1.5;
+      margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;
     }
     [data-theme="dark"] .reschedule-note { background: #2d1f00; color: #f59e0b; }
     .reschedule-note svg { width: 16px; height: 16px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; margin-top: 1px; }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
     /* ── Responsive ── */
     @media (max-width: 900px) {
@@ -812,18 +702,25 @@ function payBadge($status) {
       .res-info-grid { grid-template-columns: repeat(2, 1fr); }
       .expand-grid { grid-template-columns: 1fr; }
     }
-    @media (max-width: 620px) {
+    @media (max-width: 768px) {
+      :root { --nav-h: 60px; }
       .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .mobile-menu { display: block; }
+    }
+    @media (max-width: 620px) {
       .page-title { font-size: 1.6rem; }
       .stats-row { grid-template-columns: repeat(2, 1fr); }
       .res-info-grid { grid-template-columns: 1fr 1fr; }
       .res-card-body { padding: 16px; }
       .modal-body, .modal-header, .modal-footer { padding-left: 18px; padding-right: 18px; }
     }
-    @media (max-width: 420px) {
+    @media (max-width: 480px) {
+      :root { --nav-h: 56px; }
       .res-info-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: 1fr 1fr; }
       .method-select { font-size: .8rem; padding: 8px 10px; }
+      .toggle-label { display: none; }
     }
   </style>
 </head>
@@ -848,14 +745,34 @@ function payBadge($status) {
     <span class="toggle-label" id="toggleLabel">OFF</span>
     <div class="toggle-track" id="toggleTrack"><div class="toggle-knob"></div></div>
   </div>
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <ul>
+    <li><a href="index.php#home" onclick="closeMenu()">Home</a></li>
+    <li><a href="index.php#about" onclick="closeMenu()">About</a></li>
+    <li><a href="index.php#service" onclick="closeMenu()">Service</a></li>
+    <li><a href="reserve.php" onclick="closeMenu()">Reserve</a></li>
+    <li><a href="cust_profile.php" onclick="closeMenu()">Profile</a></li>
+    <li><a href="index.php#contact" onclick="closeMenu()">Contact</a></li>
+  </ul>
+  <div class="mobile-menu-footer">
+    <span>Dark Mode</span>
+    <div class="theme-toggle" id="themeToggleMobile" role="button" tabindex="0" aria-label="Toggle dark mode">
+      <div class="toggle-track" id="toggleTrackMobile"><div class="toggle-knob"></div></div>
+    </div>
+  </div>
+</div>
 
 <div class="bg-image"></div>
 <div class="bg-overlay"></div>
 
 <div class="page-wrapper" style="margin-top: var(--nav-h);">
 
-  <!-- Page Header -->
   <div class="page-header">
     <p class="page-label">History</p>
     <p class="page-subtitle">Track all your bookings and their current status.</p>
@@ -868,7 +785,6 @@ function payBadge($status) {
   $done     = count(array_filter($reservations, fn($r) => $r['status'] === 'completed'));
   ?>
 
-  <!-- Stats -->
   <div class="stats-row">
     <div class="stat-card">
       <div class="stat-label">Total Reservations</div>
@@ -888,14 +804,12 @@ function payBadge($status) {
     </div>
   </div>
 
-  <!-- Filter -->
   <div class="filter-row">
     <button class="filter-btn active" data-filter="all">All</button>
     <button class="filter-btn" data-filter="pending">Pending</button>
     <button class="filter-btn" data-filter="confirmed">Confirmed</button>
     <button class="filter-btn" data-filter="in_progress">In Progress</button>
     <button class="filter-btn" data-filter="completed">Completed</button>
-    <button class="filter-btn" data-filter="cancelled">Cancelled</button>
   </div>
 
   <?php if (empty($reservations)): ?>
@@ -926,29 +840,24 @@ function payBadge($status) {
       $harga    = $res['price_snapshot'] ? 'Rp ' . number_format($res['price_snapshot'], 0, ',', '.') : '—';
       $totalBayar = $res['total_bayar'] ? 'Rp ' . number_format($res['total_bayar'], 0, ',', '.') : '—';
       $statusBayar = $res['status_bayar'] ?? '';
+      // Show Pay button only if not yet paid and reservation is not cancelled
       $showPay = ($statusBayar !== 'paid') && ($status !== 'cancelled');
-      $showCancel = in_array($status, ['pending', 'confirmed']);
+      // Show reschedule only for pending/confirmed
       $canReschedule = in_array($status, ['pending', 'confirmed']);
 
+      // Safely encode data for JS
       $jsService  = htmlspecialchars($res['nama_service'] ?? '', ENT_QUOTES);
       $jsSubtotal = $res['subtotal'] ? number_format($res['subtotal'], 0, ',', '.') : '0';
       $jsId       = (int)$res['id_reservation'];
       $jsMulai    = $res['waktu_mulai'] ? date('Y-m-d\TH:i', strtotime($res['waktu_mulai'])) : '';
       $jsSelesai  = $res['waktu_selesai'] ? date('Y-m-d\TH:i', strtotime($res['waktu_selesai'])) : '';
       $jsDurasi   = (int)($res['durasi_estimasi'] ?? 0);
-
-      // Raw ISO timestamps for JS auto-status logic
       $rawMulai   = $res['waktu_mulai'] ?? '';
       $rawSelesai = $res['waktu_selesai'] ?? '';
     ?>
-    <div class="res-card"
-         data-status="<?= htmlspecialchars($status) ?>"
-         data-id="<?= $jsId ?>"
-         data-mulai="<?= htmlspecialchars($rawMulai) ?>"
-         data-selesai="<?= htmlspecialchars($rawSelesai) ?>"
+    <div class="res-card" data-status="<?= htmlspecialchars($status) ?>"
          style="animation-delay: <?= $i * 0.05 ?>s;">
       <div class="res-card-body">
-        <!-- Header -->
         <div class="res-header" onclick="toggleCard(this.closest('.res-card'))">
           <div>
             <div class="res-id"> Booked <?= $created ?></div>
@@ -964,20 +873,13 @@ function payBadge($status) {
                 Pay
               </button>
               <?php endif; ?>
-              <?php if ($showCancel): ?>
-              <button type="button" class="btn-cancel" onclick="event.stopPropagation(); cancelReservation(<?= $jsId ?>)">
-                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                Cancel
-              </button>
-              <?php endif; ?>
               <svg class="chevron" viewBox="0 0 24 24" onclick="event.stopPropagation(); toggleCard(this.closest('.res-card'))"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
         </div>
 
-        <!-- Info grid -->
-        <div class="res-info-grid" onclick="toggleCard(this.closest('.res-card'))">
-          <div class="res-info-item">
+<div class="res-info-grid" onclick="toggleCard(this.closest('.res-card'))" style="cursor:pointer;">
+  <div class="res-info-item">
             <div class="res-info-label">Pet</div>
             <div class="res-info-value">
               <?= htmlspecialchars($res['nama_pet'] ?? '—') ?>
@@ -987,18 +889,19 @@ function payBadge($status) {
             </div>
           </div>
           <div class="res-info-item">
-            <div class="res-info-label">Schedule</div>
-            <div class="res-info-value">
-              <?php if ($canReschedule): ?>
-              <span class="schedule-clickable" onclick="event.stopPropagation(); openReschedule(<?= $jsId ?>, '<?= $jsMulai ?>', <?= $jsDurasi ?>)">
-                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <?= $mulai ?> – <?= $selesai ?>
-              </span>
-              <?php else: ?>
-                <?= $mulai ?> – <?= $selesai ?>
-              <?php endif; ?>
-            </div>
-          </div>
+  <div class="res-info-label">Schedule</div>
+  <div class="res-info-value">
+    <?php if ($canReschedule): ?>
+    <span class="schedule-clickable" 
+          onclick="event.stopPropagation(); event.preventDefault(); openReschedule(<?= $jsId ?>, '<?= $jsMulai ?>', <?= $jsDurasi ?>); return false;">
+      <svg viewBox="0 0 24 24">...</svg>
+      <?= $mulai ?> – <?= $selesai ?>
+    </span>
+    <?php else: ?>
+      <span><?= $mulai ?> – <?= $selesai ?></span>
+    <?php endif; ?>
+  </div>
+</div>
           <div class="res-info-item">
             <div class="res-info-label">Total</div>
             <div class="res-info-value price"><?= $subtotal ?></div>
@@ -1041,9 +944,7 @@ function payBadge($status) {
             </div>
             <div class="expand-row">
               <span class="expand-row-label">Payment Date</span>
-              <span class="expand-row-value">
-                <?= $res['tgl_bayar'] ? date('d M Y · H:i', strtotime($res['tgl_bayar'])) : '—' ?>
-              </span>
+              <span class="expand-row-value"><?= $res['tgl_bayar'] ? date('d M Y · H:i', strtotime($res['tgl_bayar'])) : '—' ?></span>
             </div>
             <div class="expand-row">
               <span class="expand-row-label">Amount Paid</span>
@@ -1074,9 +975,7 @@ function payBadge($status) {
 </div><!-- /page-wrapper -->
 
 
-<!-- ══════════════════════════════════════════
-     PAYMENT MODAL
-══════════════════════════════════════════ -->
+<!-- PAYMENT MODAL -->
 <div class="modal-backdrop" id="payModalBackdrop">
   <div class="modal" id="payModal">
     <div class="modal-header">
@@ -1096,15 +995,12 @@ function payBadge($status) {
         </div>
         <div class="pay-service-price" id="payServicePrice">—</div>
       </div>
-
       <div class="method-label">Payment Method</div>
       <select class="method-select" id="paymentMethodSelect" onchange="selectMethod(this.value)">
         <option value="transfer">Transfer Bank / GoPay</option>
         <option value="qris">QRIS</option>
         <option value="cash">Cash On-Site</option>
       </select>
-
-      <!-- Transfer -->
       <div class="pay-instructions visible" id="instr-transfer">
         <div class="transfer-info">
           <div class="transfer-info-label">Transfer to</div>
@@ -1125,8 +1021,6 @@ function payBadge($status) {
           </div>
         </div>
       </div>
-
-      <!-- QRIS -->
       <div class="pay-instructions" id="instr-qris">
         <div class="qris-wrapper">
           <img src="assets/qris.jpeg" alt="QRIS CatDogKu" />
@@ -1146,19 +1040,13 @@ function payBadge($status) {
           </div>
         </div>
       </div>
-
-      <!-- Cash -->
       <div class="pay-instructions" id="instr-cash">
-        <div class="cash-info">
-          Cash payments are made on-site at arrival or pet pick-up. Please bring the exact amount due.
-        </div>
+        <div class="cash-info">Cash payments are made on-site at arrival or pet pick-up. Please bring the exact amount due.</div>
         <div style="font-size:.78rem; color:var(--text-sub); padding: 0 2px; line-height:1.6;">
           You do not need to upload proof of payment for cash. Click <strong>Send</strong> to confirm your cash payment intention.
         </div>
       </div>
-
     </div>
-
     <div class="modal-footer">
       <button class="btn-cancel-modal" onclick="closePayModal()">Cancel</button>
       <button class="btn-send" id="btnSend" onclick="submitPayment()">
@@ -1170,9 +1058,7 @@ function payBadge($status) {
 </div>
 
 
-<!-- ══════════════════════════════════════════
-     RESCHEDULE MODAL
-══════════════════════════════════════════ -->
+<!-- RESCHEDULE MODAL -->
 <div class="modal-backdrop" id="rescheduleBackdrop">
   <div class="modal reschedule-modal">
     <div class="modal-header">
@@ -1207,30 +1093,61 @@ function payBadge($status) {
   </div>
 </div>
 
-
-<!-- Toast -->
 <div class="toast" id="toast"></div>
-
 
 <script>
   /* ── Theme ── */
-  const html   = document.documentElement;
-  const toggle = document.getElementById('themeToggle');
-  const track  = document.getElementById('toggleTrack');
-  const label  = document.getElementById('toggleLabel');
+  const html  = document.documentElement;
+  const track = document.getElementById('toggleTrack');
+  const label = document.getElementById('toggleLabel');
+  const trackMobile = document.getElementById('toggleTrackMobile');
 
   function applyTheme(dark) {
     html.setAttribute('data-theme', dark ? 'dark' : 'light');
     track.classList.toggle('on', dark);
+    if (trackMobile) trackMobile.classList.toggle('on', dark);
     label.textContent = dark ? 'ON' : 'OFF';
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }
+
+  function toggleTheme() { applyTheme(html.getAttribute('data-theme') !== 'dark'); }
+
   const saved = localStorage.getItem('theme');
   applyTheme(saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
-  toggle.addEventListener('click', () => applyTheme(html.getAttribute('data-theme') !== 'dark'));
-  toggle.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applyTheme(html.getAttribute('data-theme') !== 'dark'); }
+
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+  document.getElementById('themeToggle').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTheme(); }
   });
+  if (document.getElementById('themeToggleMobile')) {
+    document.getElementById('themeToggleMobile').addEventListener('click', toggleTheme);
+  }
+
+  /* ── Hamburger / Mobile Menu ── */
+  const hamburger  = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  let menuOpen = false;
+
+  function closeMenu() {
+    menuOpen = false;
+    hamburger.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    mobileMenu.classList.remove('open');
+    mobileMenu.setAttribute('aria-hidden', 'true');
+  }
+
+  hamburger.addEventListener('click', () => {
+    menuOpen = !menuOpen;
+    hamburger.classList.toggle('open', menuOpen);
+    hamburger.setAttribute('aria-expanded', menuOpen);
+    mobileMenu.classList.toggle('open', menuOpen);
+    mobileMenu.setAttribute('aria-hidden', !menuOpen);
+  });
+
+  document.addEventListener('click', e => {
+    if (menuOpen && !hamburger.contains(e.target) && !mobileMenu.contains(e.target)) closeMenu();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && menuOpen) closeMenu(); });
 
   /* ── Expand / collapse card ── */
   function toggleCard(card) {
@@ -1240,10 +1157,7 @@ function payBadge($status) {
       c.classList.remove('expanded');
       c.querySelector('.res-expand').classList.remove('open');
     });
-    if (!isOpen) {
-      card.classList.add('expanded');
-      panel.classList.add('open');
-    }
+    if (!isOpen) { card.classList.add('expanded'); panel.classList.add('open'); }
   }
 
   /* ── Filter ── */
@@ -1261,11 +1175,7 @@ function payBadge($status) {
     });
   });
 
-  /* ═══════════════════════════════════════════════════════
-     AUTO STATUS UPDATE — runs every 30s + immediately
-  ═══════════════════════════════════════════════════════ */
-
-  // Badge HTML map (mirrors PHP statusBadge)
+  /* ── Auto Status Update ── */
   const STATUS_BADGE = {
     pending:     '<span class="badge badge-pending">Pending</span>',
     confirmed:   '<span class="badge badge-confirmed">Confirmed</span>',
@@ -1274,123 +1184,63 @@ function payBadge($status) {
     cancelled:   '<span class="badge badge-cancelled">Cancelled</span>',
   };
 
-  /**
-   * Compute what the status SHOULD be right now based on timestamps.
-   * Rules:
-   *   - pending  → never changed automatically (needs admin confirm first)
-   *   - confirmed → in_progress if now >= mulai && now < selesai
-   *   - confirmed → completed  if now >= selesai
-   *   - in_progress → completed if now >= selesai
-   */
   function computeStatus(currentStatus, mulaiStr, selesaiStr) {
     if (!mulaiStr || !selesaiStr) return currentStatus;
     if (currentStatus === 'pending' || currentStatus === 'cancelled') return currentStatus;
-
-    const now     = new Date();
-    const mulai   = new Date(mulaiStr);
-    const selesai = new Date(selesaiStr);
-
+    const now = new Date(), mulai = new Date(mulaiStr), selesai = new Date(selesaiStr);
     if (currentStatus === 'confirmed') {
-      if (now >= selesai)  return 'completed';
-      if (now >= mulai)    return 'in_progress';
+      if (now >= selesai) return 'completed';
+      if (now >= mulai)   return 'in_progress';
     }
-    if (currentStatus === 'in_progress') {
-      if (now >= selesai)  return 'completed';
-    }
+    if (currentStatus === 'in_progress' && now >= selesai) return 'completed';
     return currentStatus;
   }
 
-  /**
-   * Update the DOM badge and data-status for a single card.
-   * Returns true if status actually changed.
-   */
   function syncCardStatus(card) {
-    const currentStatus = card.dataset.status;
-    const mulaiStr      = card.dataset.mulai;
-    const selesaiStr    = card.dataset.selesai;
-    const newStatus     = computeStatus(currentStatus, mulaiStr, selesaiStr);
-
-    if (newStatus === currentStatus) return false;
-
-    // Update data-status so filter still works
+    const newStatus = computeStatus(card.dataset.status, card.dataset.mulai, card.dataset.selesai);
+    if (newStatus === card.dataset.status) return false;
     card.dataset.status = newStatus;
-
-    // Update badge in header
     const badgeWrap = card.querySelector('.status-badge-wrap');
     if (badgeWrap) badgeWrap.innerHTML = STATUS_BADGE[newStatus] || STATUS_BADGE.pending;
-
-    // Hide Cancel button if status moved past confirmed
     if (!['pending', 'confirmed'].includes(newStatus)) {
       const cancelBtn = card.querySelector('.btn-cancel');
       if (cancelBtn) cancelBtn.style.display = 'none';
-    }
-
-    // Hide reschedule link if status moved past confirmed
-    if (!['pending', 'confirmed'].includes(newStatus)) {
       const sched = card.querySelector('.schedule-clickable');
-      if (sched) {
-        sched.style.cursor    = 'default';
-        sched.style.textDecoration = 'none';
-        sched.style.color     = 'var(--text)';
-        sched.onclick         = null;
-      }
+      if (sched) { sched.style.cursor = 'default'; sched.style.textDecoration = 'none'; sched.style.color = 'var(--text)'; sched.onclick = null; }
     }
-
     return true;
   }
 
-  /**
-   * Push status changes to the server (fire-and-forget).
-   * The PHP handler re-runs the same UPDATE queries server-side.
-   */
   function pushStatusToServer() {
     const fd = new FormData();
     fd.append('action', 'auto_update_status');
     fetch(window.location.href, { method: 'POST', body: fd }).catch(() => {});
   }
 
-  /**
-   * Run the full sync: update all card DOMs, then push to server if anything changed.
-   */
   function runAutoStatusSync() {
     let anyChanged = false;
-    document.querySelectorAll('.res-card').forEach(card => {
-      if (syncCardStatus(card)) anyChanged = true;
-    });
+    document.querySelectorAll('.res-card').forEach(card => { if (syncCardStatus(card)) anyChanged = true; });
     if (anyChanged) {
       pushStatusToServer();
-      // Re-apply active filter so newly-changed cards are shown/hidden correctly
       const activeFilter = document.querySelector('.filter-btn.active');
       if (activeFilter) activeFilter.click();
     }
   }
 
-  // Run immediately on page load, then every 30 seconds
   runAutoStatusSync();
   setInterval(runAutoStatusSync, 30000);
 
-  /* ═══════════════════════════════════════
-     PAYMENT MODAL
-  ═══════════════════════════════════════ */
-  let currentResId    = null;
-  let currentMethod   = 'transfer';
-  let selectedFile    = null;
+  /* ── Payment Modal ── */
+  let currentResId = null, currentMethod = 'transfer', selectedFile = null;
 
   function openPayModal(id, serviceName, price) {
-    currentResId  = id;
-    currentMethod = 'transfer';
-    selectedFile  = null;
-
+    currentResId = id; currentMethod = 'transfer'; selectedFile = null;
     document.getElementById('payServiceName').textContent  = serviceName || '—';
     document.getElementById('payServicePrice').textContent = price ? 'Rp ' + price : '—';
-
     document.getElementById('paymentMethodSelect').value = 'transfer';
-
     document.querySelectorAll('.pay-instructions').forEach(p => p.classList.remove('visible'));
     document.getElementById('instr-transfer').classList.add('visible');
-
     resetFileUpload();
-
     document.getElementById('payModalBackdrop').classList.add('open');
     document.body.style.overflow = 'hidden';
   }
@@ -1405,112 +1255,62 @@ function payBadge($status) {
   });
 
   function selectMethod(method) {
-    currentMethod = method;
-    selectedFile  = null;
+    currentMethod = method; selectedFile = null;
     document.querySelectorAll('.pay-instructions').forEach(p => p.classList.remove('visible'));
     document.getElementById('instr-' + method).classList.add('visible');
     resetFileUpload();
   }
 
   function resetFileUpload() {
-    ['fileInput','fileInputQris'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    ['uploadPreview','uploadPreviewQris'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
-    });
-    ['uploadDrop','uploadDropQris'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('dragover');
-    });
+    ['fileInput','fileInputQris'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['uploadPreview','uploadPreviewQris'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    ['uploadDrop','uploadDropQris'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('dragover'); });
   }
 
-  function handleFileSelect(event, type) {
-    const file = event.target.files[0];
-    if (!file) return;
-    processFile(file, type);
-  }
-
-  function handleDragOver(event) {
-    event.preventDefault();
-    event.currentTarget.classList.add('dragover');
-  }
-  function handleDragLeave(event) {
-    event.currentTarget.classList.remove('dragover');
-  }
+  function handleFileSelect(event, type) { const file = event.target.files[0]; if (!file) return; processFile(file, type); }
+  function handleDragOver(event) { event.preventDefault(); event.currentTarget.classList.add('dragover'); }
+  function handleDragLeave(event) { event.currentTarget.classList.remove('dragover'); }
   function handleDrop(event, type) {
-    event.preventDefault();
-    event.currentTarget.classList.remove('dragover');
-    const file = event.dataTransfer.files[0];
-    if (!file) return;
-    processFile(file, type);
+    event.preventDefault(); event.currentTarget.classList.remove('dragover');
+    const file = event.dataTransfer.files[0]; if (!file) return; processFile(file, type);
   }
 
   function processFile(file, type) {
-    const allowed = ['image/jpeg','image/jpg','image/png'];
-    if (!allowed.includes(file.type)) {
-      showToast('Format tidak didukung. Gunakan JPG/JPEG/PNG.', 'error');
-      return;
+    if (!['image/jpeg','image/jpg','image/png'].includes(file.type)) {
+      showToast('Format tidak didukung. Gunakan JPG/JPEG/PNG.', 'error'); return;
     }
     selectedFile = file;
-
-    const suffix     = type === 'qris' ? 'Qris' : '';
-    const previewDiv = document.getElementById('uploadPreview' + suffix);
-    const previewImg = document.getElementById('previewImg' + suffix);
-    const previewName= document.getElementById('previewName' + suffix);
-
-    if (type === 'qris') {
-      const dt = new DataTransfer(); dt.items.add(file);
-      document.getElementById('fileInputQris').files = dt.files;
-    } else {
-      const dt = new DataTransfer(); dt.items.add(file);
-      document.getElementById('fileInput').files = dt.files;
-    }
-
+    const suffix = type === 'qris' ? 'Qris' : '';
+    const previewDiv  = document.getElementById('uploadPreview' + suffix);
+    const previewImg  = document.getElementById('previewImg' + suffix);
+    const previewName = document.getElementById('previewName' + suffix);
+    const dt = new DataTransfer(); dt.items.add(file);
+    document.getElementById(type === 'qris' ? 'fileInputQris' : 'fileInput').files = dt.files;
     const reader = new FileReader();
-    reader.onload = e => {
-      previewImg.src = e.target.result;
-      previewName.textContent = file.name;
-      previewDiv.style.display = 'block';
-    };
+    reader.onload = e => { previewImg.src = e.target.result; previewName.textContent = file.name; previewDiv.style.display = 'block'; };
     reader.readAsDataURL(file);
   }
 
   function submitPayment() {
     if (!currentResId) return;
-
     if (currentMethod !== 'cash') {
-      const inputId = currentMethod === 'qris' ? 'fileInputQris' : 'fileInput';
-      const input   = document.getElementById(inputId);
-      if (!input.files || input.files.length === 0) {
-        showToast('Please upload proof of payment first.', 'error');
-        return;
-      }
+      const input = document.getElementById(currentMethod === 'qris' ? 'fileInputQris' : 'fileInput');
+      if (!input.files || input.files.length === 0) { showToast('Please upload proof of payment first.', 'error'); return; }
       selectedFile = input.files[0];
     }
-
     const btn = document.getElementById('btnSend');
     btn.disabled = true;
     btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;animation:spin .8s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Sending...';
-
     const formData = new FormData();
     formData.append('action', 'pay');
     formData.append('id_reservation', currentResId);
     formData.append('metode_bayar', currentMethod);
     if (selectedFile) formData.append('bukti_bayar', selectedFile);
-
     fetch(window.location.href, { method: 'POST', body: formData })
       .then(r => r.json())
       .then(data => {
-        if (data.success) {
-          showToast(data.message, 'success');
-          closePayModal();
-          setTimeout(() => location.reload(), 1800);
-        } else {
-          showToast(data.message || 'Failed to send payment.', 'error');
-        }
+        if (data.success) { showToast(data.message, 'success'); closePayModal(); setTimeout(() => location.reload(), 1800); }
+        else showToast(data.message || 'Failed to send payment.', 'error');
       })
       .catch(() => showToast('A network error occurred.', 'error'))
       .finally(() => {
@@ -1519,15 +1319,11 @@ function payBadge($status) {
       });
   }
 
-  /* ═══════════════════════════════════════
-     RESCHEDULE MODAL
-  ═══════════════════════════════════════ */
-  let currentRsId = null;
-  let currentDuration = 0;
+  /* ── Reschedule Modal ── */
+  let currentRsId = null, currentDuration = 0;
 
   function openReschedule(id, mulai, durasi) {
-    currentRsId = id;
-    currentDuration = durasi;
+    currentRsId = id; currentDuration = durasi;
     document.getElementById('rsMulai').value = mulai || '';
     updateEndTime();
     document.getElementById('rescheduleBackdrop').classList.add('open');
@@ -1536,10 +1332,7 @@ function payBadge($status) {
 
   function updateEndTime() {
     const startInput = document.getElementById('rsMulai').value;
-    if (!startInput || currentDuration <= 0) {
-      document.getElementById('rsSelesai').value = '';
-      return;
-    }
+    if (!startInput || currentDuration <= 0) { document.getElementById('rsSelesai').value = ''; return; }
     const startTime = new Date(startInput);
     const endTime   = new Date(startTime.getTime() + currentDuration * 60000);
     const pad = n => String(n).padStart(2, '0');
@@ -1560,33 +1353,20 @@ function payBadge($status) {
     if (!currentRsId) return;
     const mulai   = document.getElementById('rsMulai').value;
     const selesai = document.getElementById('rsSelesai').value;
-
-    if (!mulai) {
-      showToast('Please select a start time.', 'error'); return;
-    }
-    if (!selesai) {
-      showToast('End time could not be calculated. Please try again.', 'error'); return;
-    }
-
+    if (!mulai)   { showToast('Please select a start time.', 'error'); return; }
+    if (!selesai) { showToast('End time could not be calculated. Please try again.', 'error'); return; }
     const btn = document.getElementById('btnReschedule');
     btn.disabled = true;
-
     const formData = new FormData();
     formData.append('action', 'reschedule');
     formData.append('id_reservation', currentRsId);
     formData.append('waktu_mulai',   mulai.replace('T', ' ') + ':00');
     formData.append('waktu_selesai', selesai.replace('T', ' ') + ':00');
-
     fetch(window.location.href, { method: 'POST', body: formData })
       .then(r => r.json())
       .then(data => {
-        if (data.success) {
-          showToast(data.message, 'success');
-          closeReschedule();
-          setTimeout(() => location.reload(), 1800);
-        } else {
-          showToast(data.message || 'Failed to change schedule.', 'error');
-        }
+        if (data.success) { showToast(data.message, 'success'); closeReschedule(); setTimeout(() => location.reload(), 1800); }
+        else showToast(data.message || 'Failed to change schedule.', 'error');
       })
       .catch(() => showToast('A network error occurred.', 'error'))
       .finally(() => { btn.disabled = false; currentDuration = 0; });
@@ -1595,34 +1375,25 @@ function payBadge($status) {
   /* ── Toast ── */
   function showToast(msg, type) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className   = 'toast ' + (type || '');
-    t.classList.add('show');
+    t.textContent = msg; t.className = 'toast ' + (type || ''); t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3200);
   }
 
   /* ── Cancel reservation ── */
   function cancelReservation(id) {
     if (!confirm('Are you sure you want to cancel this reservation? This action cannot be undone.')) return;
-
     const formData = new FormData();
     formData.append('action', 'cancel');
     formData.append('id_reservation', id);
-
     fetch(window.location.href, { method: 'POST', body: formData })
       .then(r => r.json())
       .then(data => {
-        if (data.success) {
-          showToast(data.message, 'success');
-          setTimeout(() => location.reload(), 1800);
-        } else {
-          showToast(data.message || 'Failed to cancel reservation.', 'error');
-        }
+        if (data.success) { showToast(data.message, 'success'); setTimeout(() => location.reload(), 1800); }
+        else showToast(data.message || 'Failed to cancel reservation.', 'error');
       })
       .catch(() => showToast('A network error occurred.', 'error'));
   }
 
-  /* ── Spinner keyframe ── */
   const style = document.createElement('style');
   style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
   document.head.appendChild(style);
