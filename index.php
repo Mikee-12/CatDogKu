@@ -11,7 +11,7 @@ if(!isset($_SESSION['customer_id'])){
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CatDogKu — Care Your Pets With Love</title>
+  <title>CatDogKu — Because Your Pets Deserve the Best</title>
   <link rel="icon" type="image/png" href="assets/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
