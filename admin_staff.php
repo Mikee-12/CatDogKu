@@ -41,7 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_logout'])) {
     }
 }
 
-
 // ── Handle ADD STAFF (POST) ───────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_staff'])) {
     $nama_staff        = mysqli_real_escape_string($conn, trim($_POST['nama_staff']        ?? ''));
@@ -176,19 +175,55 @@ function pg_qs($page, $search, $filter_status) {
 body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
-.sidebar { width: 260px; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 1000; background-color: #2c3e50; color: #fff; box-shadow: 4px 0 10px rgba(0,0,0,.05); }
+.sidebar {
+    width: 260px; position: fixed; top: 0; left: 0;
+    height: 100vh; overflow-y: auto; z-index: 1050;
+    background-color: #2c3e50; color: #fff;
+    box-shadow: 4px 0 10px rgba(0,0,0,.05);
+    transition: transform .3s ease;
+}
 .sidebar-brand { font-size: 1.25rem; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,.1); }
 .sidebar a { color: #aeb6bf; text-decoration: none; padding: 12px 20px; display: flex; align-items: center; border-radius: 10px; margin-bottom: 8px; transition: all .3s ease; font-weight: 500; }
 .sidebar a:hover, .sidebar a.active { background-color: #3498db; color: #fff; transform: translateX(5px); }
 .sidebar a.logout-link:hover { background-color: rgba(231,76,60,.15); color: #e74c3c; transform: translateX(5px); }
 
+/* ── Sidebar overlay ── */
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1040; }
+.sidebar-overlay.show { display: block; }
+
+/* ── Topbar (mobile only) ── */
+.topbar {
+    display: none;
+    position: sticky; top: 0; z-index: 1030;
+    background: #2c3e50; color: #fff;
+    padding: 12px 16px;
+    align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.topbar-brand { font-size: 1rem; font-weight: 700; letter-spacing: .5px; }
+.topbar-right  { display: flex; align-items: center; gap: 12px; }
+.btn-hamburger {
+    background: none; border: none; color: #fff;
+    font-size: 1.4rem; cursor: pointer; padding: 4px;
+    display: flex; align-items: center; transition: opacity .2s;
+}
+.btn-hamburger:hover { opacity: .8; }
+
 /* ── Layout ───────────────────────────────────────────────────────────────── */
 .main-content { margin-left: 260px; width: calc(100% - 260px); min-height: 100vh; }
+
+/* ── Stats grid ──────────────────────────────────────────────────────────── */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
 
 /* ── Stat Cards ───────────────────────────────────────────────────────────── */
 .stat-card { border-radius: 15px; border: none; transition: transform .3s ease, box-shadow .3s ease; cursor: default; }
 .stat-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,.08) !important; }
-.icon-box { width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+.icon-box { border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 /* ── Toolbar ──────────────────────────────────────────────────────────────── */
 .toolbar { background: #fff; border-radius: 14px; padding: 18px 22px; box-shadow: 0 2px 10px rgba(0,0,0,.04); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -198,7 +233,7 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 
 /* ── Table card ───────────────────────────────────────────────────────────── */
 .table-card { background: #fff; border-radius: 16px; box-shadow: 0 5px 20px rgba(0,0,0,.04); overflow: hidden; }
-.table-card-header { padding: 18px 24px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+.table-card-header { padding: 18px 24px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .table > thead > tr > th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #6c757d; background: #f8f9fa; border-bottom: 1px solid #e9ecef; padding: 13px 16px; white-space: nowrap; }
 .table > tbody > tr > td { padding: 13px 16px; vertical-align: middle; font-size: 13.5px; border-bottom: 1px solid #f5f5f5; }
 .table > tbody > tr:last-child > td { border-bottom: none; }
@@ -206,6 +241,12 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 
 /* ── Avatar ───────────────────────────────────────────────────────────────── */
 .avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+
+/* ── Mobile staff cards ───────────────────────────────────────────────────── */
+.staff-mobile-card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.05); border: 1px solid #f0f0f0; }
+.staff-mobile-card .card-title  { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 2px; }
+.staff-mobile-card .card-sub    { font-size: 12px; color: #6c757d; margin-bottom: 10px; }
+.staff-mobile-card .card-actions{ display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ── Action buttons ───────────────────────────────────────────────────────── */
 .btn-action { padding: 5px 12px; font-size: 12px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; transition: opacity .2s; display: inline-flex; align-items: center; gap: 4px; }
@@ -234,66 +275,24 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 .modal-body    { padding: 24px; }
 .modal-footer  { border-top: 1px solid #f0f0f0; padding: 16px 24px; }
 
-/* ── Form modal — same style as Add Staff ─────────────────────────────────── */
-.form-modal .modal-body label {
-    font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px;
-}
+/* ── Form modal ───────────────────────────────────────────────────────────── */
+.form-modal .modal-body label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
 .form-modal .form-control,
-.form-modal .form-select {
-    border-radius: 10px;
-    border: 1.5px solid #e9ecef;
-    font-size: 13.5px;
-    padding: 10px 14px;
-}
+.form-modal .form-select { border-radius: 10px; border: 1.5px solid #e9ecef; font-size: 13.5px; padding: 10px 14px; }
 .form-modal .form-control:focus,
-.form-modal .form-select:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52,152,219,.12);
-}
+.form-modal .form-select:focus { border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,.12); }
 .form-modal .form-text { font-size: 11.5px; color: #9ca3af; margin-top: 5px; }
-
-/* Toggle switch inside form-modal */
-.form-modal .form-check-input {
-    width: 40px; height: 22px; cursor: pointer;
-    background-color: #dee2e6; border: none;
-    border-radius: 999px; transition: background .2s;
-}
+.form-modal .form-check-input { width: 40px; height: 22px; cursor: pointer; background-color: #dee2e6; border: none; border-radius: 999px; transition: background .2s; }
 .form-modal .form-check-input:checked { background-color: #3498db; }
 .form-modal .form-check-label { font-size: 13px; font-weight: 500; color: #374151; padding-left: 4px; cursor: pointer; }
 
-/* ── Logout modal spesifik ───────────────────────────────────────────────── */
-.logout-icon-wrap {
-    width: 64px; height: 64px; border-radius: 18px;
-    background: rgba(231,76,60,.1);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 28px; color: #e74c3c;
-    margin: 0 auto 6px;
-}
-.logout-modal-error {
-    background: #fdecea;
-    border: 1.5px solid #f5c6c6;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: #922b21;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-/* Password input dengan toggle show/hide */
+/* ── Logout modal ─────────────────────────────────────────────────────────── */
+.logout-icon-wrap { width: 64px; height: 64px; border-radius: 18px; background: rgba(231,76,60,.1); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #e74c3c; margin: 0 auto 6px; }
+.logout-modal-error { background: #fdecea; border: 1.5px solid #f5c6c6; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #922b21; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
 .pw-wrapper { position: relative; }
-.pw-wrapper .form-control { padding-right: 44px; }
-.pw-toggle {
-    position: absolute; top: 50%; right: 12px;
-    transform: translateY(-50%);
-    background: none; border: none; padding: 0;
-    color: #9ca3af; cursor: pointer; font-size: 16px;
-    display: flex; align-items: center;
-    transition: color .2s;
-}
-.pw-toggle:hover { color: #374151; }
+.pw-wrapper .form-control { padding-right: 50px; }
+.pw-toggle { position: absolute; right: 0; top: 0; bottom: 0; width: 50px; border: none; background: none; display: flex; align-items: center; justify-content: center; color: #6c757d; cursor: pointer; font-size: 16px; transition: color .2s; }
+.pw-toggle:hover { color: #495057; }
 
 /* ── Detail Modal ─────────────────────────────────────────────────────────── */
 .detail-row { display: flex; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 13.5px; }
@@ -305,29 +304,86 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 .mini-stat .lbl { font-size: 11px; color: #6c757d; font-weight: 500; margin-top: 2px; }
 
 /* ── Toast ────────────────────────────────────────────────────────────────── */
-.toast-notif {
-    position: fixed; top: 24px; right: 24px;
-    background: #16a34a; color: #fff; border-radius: 12px;
-    padding: 14px 20px; font-size: 14px; font-weight: 600;
-    display: flex; align-items: center; gap: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 99999;
-    opacity: 0; transform: translateX(40px);
-    transition: all .3s ease; pointer-events: none;
-}
+.toast-notif { position: fixed; top: 24px; right: 24px; background: #16a34a; color: #fff; border-radius: 12px; padding: 14px 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 99999; opacity: 0; transform: translateX(40px); transition: all .3s ease; pointer-events: none; }
 .toast-notif.show { opacity: 1; transform: translateX(0); }
 
-/* ── Responsive ───────────────────────────────────────────────────────────── */
+/* ════════════════════════════
+   RESPONSIVE
+════════════════════════════ */
 @media (max-width: 992px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
     .main-content { margin-left: 0; width: 100%; }
+    .topbar { display: flex; }
+}
+
+@media (max-width: 768px) {
+    .main-content { padding: 0 !important; }
+    .page-inner { padding: 16px; }
+
+    /* Stats: 2 kolom */
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Toolbar stack */
+    .toolbar { padding: 14px; gap: 8px; }
+    .toolbar .flex-grow-1 { min-width: 100% !important; order: -1; }
+    .toolbar .form-select { width: 100% !important; min-width: unset !important; }
+    .toolbar .btn-filter  { width: 100%; justify-content: center; }
+    .toolbar > span.ms-auto { display: none; }
+
+    /* Desktop table hilang, mobile cards muncul */
+    .desktop-table { display: none !important; }
+    .mobile-cards  { display: block !important; }
+
+    .pagination-info { display: none; }
+    .table-card-header { padding: 14px 16px; }
+    .table-card-header h5 { font-size: 14px; }
+}
+
+@media (min-width: 769px) {
+    .mobile-cards  { display: none !important; }
+    .desktop-table { display: block !important; }
+}
+
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .page-inner { padding: 12px; }
+    .stat-card .card-body { padding: 12px; }
+    .stat-card h3 { font-size: 1.3rem !important; }
 }
 </style>
 </head>
 <body>
 
+<!-- ═══ SIDEBAR OVERLAY ════════════════════════════════════════════════════ -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ═══ TOPBAR (mobile only) ═══════════════════════════════════════════════ -->
+<div class="topbar" id="topbar">
+    <button class="btn-hamburger" onclick="openSidebar()" aria-label="Open menu">
+        <i class="bi bi-list"></i>
+    </button>
+    <span class="topbar-brand">CatDogKu Admin</span>
+    <div class="topbar-right">
+        <a href="admin_reserve.php?status=pending" class="position-relative text-decoration-none" style="color:#fff">
+            <i class="bi bi-bell fs-5"></i>
+            <?php if($pending > 0): ?>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px"><?= $pending ?></span>
+            <?php endif; ?>
+        </a>
+    </div>
+</div>
+
 <!-- ═══════════════════════════ SIDEBAR ════════════════════════════════════ -->
 <div class="sidebar p-3" id="sidebar">
+    <!-- Close button (mobile) -->
+    <div class="d-flex align-items-center justify-content-between mb-2 d-lg-none">
+        <span style="font-size:.9rem;font-weight:600;color:rgba(255,255,255,.6);">Menu</span>
+        <button class="btn-hamburger" onclick="closeSidebar()" style="font-size:1.2rem">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
     <div class="sidebar-brand text-center py-3 mb-4 fw-bold text-white">CatDogKu Admin</div>
 
     <a href="admin_dash.php" class="<?= $current_page_file==='admin_dash.php'?'active':'' ?>">
@@ -363,19 +419,20 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
     </a>
 
     <div class="mt-4 pt-3 border-top border-secondary">
-        <!-- Logout: trigger modal, bukan href langsung -->
-        <a href="#" class="logout-link fw-bold" onclick="openLogoutModal(); return false;"><i class="bi bi-box-arrow-left me-2 fs-5"></i> Logout</a>
+        <a href="#" class="logout-link fw-bold" onclick="openLogoutModal(); return false;">
+            <i class="bi bi-box-arrow-left me-2 fs-5"></i> Logout
+        </a>
     </div>
 </div>
 
 <!-- ═══════════════════════════ MAIN CONTENT ═══════════════════════════════ -->
 <div class="main-content p-4 p-md-5">
+<div class="page-inner">
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
+    <!-- Header desktop -->
+    <div class="d-none d-lg-flex justify-content-between align-items-center mb-5">
         <div>
             <h2 class="fw-bold text-dark mb-0">Staff</h2>
-            <p class="text-muted mb-0" style="font-size:13px">Kelola data seluruh staff CatDogKu</p>
         </div>
         <a href="admin_reserve.php?status=pending" class="position-relative text-decoration-none text-secondary">
             <i class="bi bi-bell fs-5"></i>
@@ -385,41 +442,47 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
         </a>
     </div>
 
+    <!-- Header mobile -->
+    <div class="d-lg-none mb-3">
+        <h4 class="fw-bold text-dark mb-0">Staff</h4>
+        <p class="text-muted mb-0" style="font-size:12px">Kelola data seluruh staff CatDogKu</p>
+    </div>
+
     <!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-4 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Total Staff</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($stat_total) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px">All registered staff</p>
-                    </div>
-                    <div class="icon-box bg-primary bg-opacity-10 text-primary"><i class="bi bi-person-badge"></i></div>
+    <div class="stats-grid">
+        <div class="card stat-card shadow-sm p-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted fw-semibold mb-1" style="font-size:12px">Total Staff</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="font-size:1.5rem"><?= number_format($stat_total) ?></h3>
+                    <p class="text-muted mb-0 d-none d-sm-block" style="font-size:11px">All registered</p>
+                </div>
+                <div class="icon-box bg-primary bg-opacity-10 text-primary" style="width:46px;height:46px;font-size:22px">
+                    <i class="bi bi-person-badge"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Active Staff</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($stat_active) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px">Ready to serve customers</p>
-                    </div>
-                    <div class="icon-box bg-success bg-opacity-10 text-success"><i class="bi bi-person-check"></i></div>
+        <div class="card stat-card shadow-sm p-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted fw-semibold mb-1" style="font-size:12px">Active</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="font-size:1.5rem"><?= number_format($stat_active) ?></h3>
+                    <p class="text-muted mb-0 d-none d-sm-block" style="font-size:11px">Ready to serve</p>
+                </div>
+                <div class="icon-box bg-success bg-opacity-10 text-success" style="width:46px;height:46px;font-size:22px">
+                    <i class="bi bi-person-check"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Inactive Staff</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($stat_inactive) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px">Currently not active</p>
-                    </div>
-                    <div class="icon-box bg-danger bg-opacity-10 text-danger"><i class="bi bi-person-dash"></i></div>
+        <div class="card stat-card shadow-sm p-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted fw-semibold mb-1" style="font-size:12px">Inactive</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="font-size:1.5rem"><?= number_format($stat_inactive) ?></h3>
+                    <p class="text-muted mb-0 d-none d-sm-block" style="font-size:11px">Not active</p>
+                </div>
+                <div class="icon-box bg-danger bg-opacity-10 text-danger" style="width:46px;height:46px;font-size:22px">
+                    <i class="bi bi-person-dash"></i>
                 </div>
             </div>
         </div>
@@ -459,7 +522,7 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
         </div>
     </form>
 
-    <!-- ── Table ──────────────────────────────────────────────────────────── -->
+    <!-- ── Table card ─────────────────────────────────────────────────────── -->
     <div class="table-card mb-4">
         <div class="table-card-header">
             <h5 class="fw-bold mb-0" style="font-size:15px">
@@ -467,7 +530,7 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
                 <span class="badge bg-primary bg-opacity-10 text-primary ms-2" style="font-size:12px"><?= number_format($total_rows) ?></span>
             </h5>
             <div class="d-flex align-items-center gap-3">
-                <span class="text-muted" style="font-size:13px">Page <?= $current_pg ?> of <?= $total_pages ?></span>
+                <span class="text-muted pagination-info" style="font-size:13px">Page <?= $current_pg ?> of <?= $total_pages ?></span>
                 <button type="button"
                         class="btn btn-primary btn-sm"
                         style="border-radius:9px;font-size:13px;font-weight:600;padding:6px 16px;display:inline-flex;align-items:center;gap:5px"
@@ -477,7 +540,8 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
             </div>
         </div>
 
-        <div class="table-responsive">
+        <!-- DESKTOP TABLE -->
+        <div class="table-responsive desktop-table">
             <table class="table mb-0">
                 <thead>
                     <tr>
@@ -568,10 +632,84 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
             </table>
         </div>
 
+        <!-- MOBILE CARDS -->
+        <div class="mobile-cards p-3">
+            <?php if(empty($staffs)): ?>
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-person-badge fs-2 d-block mb-2 text-secondary"></i>
+                    No staff found
+                </div>
+            <?php else: ?>
+            <?php
+            $avatar_colors = ['#3498db','#e74c3c','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#16a085'];
+            foreach($staffs as $st):
+                $words    = explode(' ', trim($st['nama_staff']));
+                $initials = strtoupper(substr($words[0],0,1) . (isset($words[1]) ? substr($words[1],0,1) : ''));
+                $color    = $avatar_colors[$st['id_staff'] % count($avatar_colors)];
+            ?>
+            <div class="staff-mobile-card">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="avatar" style="background:<?= $color ?>;width:42px;height:42px;border-radius:10px;font-size:15px;flex-shrink:0">
+                        <?= htmlspecialchars($initials) ?>
+                    </div>
+                    <div style="min-width:0">
+                        <div class="card-title"><?= htmlspecialchars($st['nama_staff']) ?></div>
+                        <div class="card-sub d-flex align-items-center gap-2 flex-wrap">
+                            <span><?= htmlspecialchars($st['jabatan'] ?? '—') ?></span>
+                            <?php if($st['nama_specialization']): ?>
+                                · <span class="spec-tag"><?= htmlspecialchars($st['nama_specialization']) ?></span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="ms-auto flex-shrink-0">
+                        <?php if($st['is_active']): ?>
+                            <span class="status-pill pill-active"><i class="bi bi-circle-fill" style="font-size:7px"></i> Active</span>
+                        <?php else: ?>
+                            <span class="status-pill pill-inactive"><i class="bi bi-circle-fill" style="font-size:7px"></i> Inactive</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <!-- Phone & jobs row -->
+                <div class="d-flex gap-3 mb-2" style="font-size:12px;color:#6c757d">
+                    <?php if($st['no_telepon']): ?>
+                        <span><i class="bi bi-telephone me-1"></i><?= htmlspecialchars($st['no_telepon']) ?></span>
+                    <?php endif; ?>
+                    <span><i class="bi bi-briefcase me-1"></i><?= $st['total_handled'] ?> jobs</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-action btn-view"
+                        onclick="openDetail(<?= htmlspecialchars(json_encode($st), ENT_QUOTES) ?>, '<?= $color ?>', '<?= htmlspecialchars($initials) ?>')">
+                        <i class="bi bi-eye-fill"></i> Detail
+                    </button>
+                    <button class="btn-action btn-edit-act"
+                        onclick="openEditStaff(<?= htmlspecialchars(json_encode($st), ENT_QUOTES) ?>)">
+                        <i class="bi bi-pencil-fill"></i> Edit
+                    </button>
+                    <form method="POST" style="display:inline">
+                        <input type="hidden" name="id_staff"      value="<?= $st['id_staff'] ?>">
+                        <input type="hidden" name="toggle_active" value="1">
+                        <?php if($st['is_active']): ?>
+                            <input type="hidden" name="new_status" value="0">
+                            <button type="submit" class="btn-action btn-deact"
+                                    onclick="return confirm('Nonaktifkan <?= addslashes(htmlspecialchars($st['nama_staff'])) ?>?')">
+                                <i class="bi bi-pause-circle"></i> Nonaktif
+                            </button>
+                        <?php else: ?>
+                            <input type="hidden" name="new_status" value="1">
+                            <button type="submit" class="btn-action btn-activate">
+                                <i class="bi bi-play-circle"></i> Aktifkan
+                            </button>
+                        <?php endif; ?>
+                    </form>
+                </div>
+            </div>
+            <?php endforeach; endif; ?>
+        </div>
+
         <!-- Pagination -->
         <?php if($total_pages > 1): ?>
-        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top" style="background:#fafafa">
-            <span class="text-muted" style="font-size:13px">
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top" style="background:#fafafa;flex-wrap:wrap;gap:8px">
+            <span class="text-muted pagination-info" style="font-size:13px">
                 Showing <?= ($offset+1) ?>–<?= min($offset+$per_page, $total_rows) ?> of <?= $total_rows ?>
             </span>
             <nav>
@@ -603,6 +741,7 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
         <?php endif; ?>
     </div>
 
+</div><!-- /page-inner -->
 </div><!-- /main-content -->
 
 
@@ -619,28 +758,19 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
             <form method="POST" action="admin_staff.php" id="addStaffForm">
                 <input type="hidden" name="add_staff" value="1">
                 <div class="modal-body">
-
                     <div class="mb-3">
                         <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                        <input type="text" name="nama_staff"
-                               class="form-control" placeholder="e.g. Budi Santoso"
-                               required maxlength="100">
+                        <input type="text" name="nama_staff" class="form-control" placeholder="e.g. Budi Santoso" required maxlength="100">
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label">Position / Jabatan <span class="text-danger">*</span></label>
-                        <input type="text" name="jabatan"
-                               class="form-control" placeholder="e.g. Groomer, Veterinarian"
-                               required maxlength="50">
+                        <input type="text" name="jabatan" class="form-control" placeholder="e.g. Groomer, Veterinarian" required maxlength="50">
                         <div class="form-text">Job title or role in the clinic.</div>
                     </div>
-
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Phone Number</label>
-                            <input type="tel" name="no_telepon"
-                                   class="form-control" placeholder="e.g. 08123456789"
-                                   maxlength="15">
+                            <input type="tel" name="no_telepon" class="form-control" placeholder="e.g. 08123456789" maxlength="15">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Specialization</label>
@@ -652,11 +782,9 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <div class="form-text">Optional. Link to a specialization.</div>
+                            <div class="form-text">Optional.</div>
                         </div>
                     </div>
-
-                    <!-- Status toggle -->
                     <div class="d-flex align-items-center justify-content-between p-3"
                          style="background:#f8fafc;border-radius:10px;border:1.5px solid #e9ecef">
                         <div>
@@ -668,13 +796,10 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
                             <label class="form-check-label" for="add-active" id="add-active-label">Active</label>
                         </div>
                     </div>
-
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal"
-                            style="border-radius:8px;font-size:13px">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm"
-                            style="border-radius:8px;font-size:13px;font-weight:600">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" style="border-radius:8px;font-size:13px">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" style="border-radius:8px;font-size:13px;font-weight:600">
                         <i class="bi bi-plus-lg me-1"></i> Add Staff
                     </button>
                 </div>
@@ -698,24 +823,18 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
                 <input type="hidden" name="edit_staff" value="1">
                 <input type="hidden" name="id_staff" id="edit-id">
                 <div class="modal-body">
-
                     <div class="mb-3">
                         <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                        <input type="text" name="nama_staff" id="edit-nama"
-                               class="form-control" required maxlength="100">
+                        <input type="text" name="nama_staff" id="edit-nama" class="form-control" required maxlength="100">
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label">Position / Jabatan <span class="text-danger">*</span></label>
-                        <input type="text" name="jabatan" id="edit-jabatan"
-                               class="form-control" required maxlength="50">
+                        <input type="text" name="jabatan" id="edit-jabatan" class="form-control" required maxlength="50">
                     </div>
-
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Phone Number</label>
-                            <input type="tel" name="no_telepon" id="edit-phone"
-                                   class="form-control" maxlength="15">
+                            <input type="tel" name="no_telepon" id="edit-phone" class="form-control" maxlength="15">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Specialization</label>
@@ -729,8 +848,6 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
                             </select>
                         </div>
                     </div>
-
-                    <!-- Status toggle -->
                     <div class="d-flex align-items-center justify-content-between p-3"
                          style="background:#f8fafc;border-radius:10px;border:1.5px solid #e9ecef">
                         <div>
@@ -742,13 +859,10 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
                             <label class="form-check-label" for="edit-active" id="edit-active-label">Active</label>
                         </div>
                     </div>
-
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal"
-                            style="border-radius:8px;font-size:13px">Cancel</button>
-                    <button type="submit" class="btn btn-warning btn-sm"
-                            style="border-radius:8px;font-size:13px;font-weight:600">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" style="border-radius:8px;font-size:13px">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm" style="border-radius:8px;font-size:13px;font-weight:600">
                         <i class="bi bi-check-lg me-1"></i> Save Changes
                     </button>
                 </div>
@@ -801,75 +915,56 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
                    style="border-radius:8px;font-size:13px;font-weight:600">
                     <i class="bi bi-clock me-1"></i> View Schedule
                 </a>
-                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal"
-                        style="border-radius:8px;font-size:13px">Close</button>
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" style="border-radius:8px;font-size:13px">Close</button>
             </div>
         </div>
     </div>
 </div>
 
 
-<!-- ══════════════════ LOGOUT CONFIRMATION MODAL ══════════════════════════ -->
+<!-- ══════════════════ LOGOUT MODAL ═══════════════════════════════════════ -->
 <div class="modal fade form-modal" id="logoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        onclick="clearLogoutForm()"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="clearLogoutForm()"></button>
             </div>
             <form method="POST" action="admin_staff.php" id="logoutForm">
                 <input type="hidden" name="confirm_logout" value="1">
                 <div class="modal-body pt-2">
-
-                    <!-- Icon + judul -->
                     <div class="text-center mb-4">
-                        <div class="logout-icon-wrap">
-                            <i class="bi bi-box-arrow-left"></i>
-                        </div>
+                        <div class="logout-icon-wrap"><i class="bi bi-box-arrow-left"></i></div>
                         <h5 class="fw-bold mt-3 mb-1" style="font-size:16px;color:#1a1a2e">Log Out Confirmation</h5>
-                        <p class="text-muted mb-0" style="font-size:13px">
-                            Enter your password to log out of this session.
-                        </p>
+                        <p class="text-muted mb-0" style="font-size:13px">Enter your password to log out of this session.</p>
                     </div>
-
-                    <!-- Error message (tampil jika password salah dari PHP) -->
                     <?php if(!empty($logout_error)): ?>
                     <div class="logout-modal-error">
                         <i class="bi bi-exclamation-circle-fill"></i>
                         <?= htmlspecialchars($logout_error) ?>
                     </div>
                     <?php endif; ?>
-
-                    <!-- Error JS (salah pw tanpa reload) -->
                     <div class="logout-modal-error" id="logout-js-error" style="display:none">
                         <i class="bi bi-exclamation-circle-fill"></i>
                         <span id="logout-js-error-msg">Password is required.</span>
                     </div>
-
-                    <!-- Password field -->
                     <div class="mb-3">
                         <label class="form-label">Password <span class="text-danger">*</span></label>
                         <div class="pw-wrapper">
                             <input type="password" name="logout_password" id="logout-pw"
                                    class="form-control" placeholder="Enter your password" required
                                    autocomplete="current-password">
-                            <button type="button" class="pw-toggle" id="pw-toggle-btn"
-                                    onclick="togglePwVisibility()">
+                            <button type="button" class="pw-toggle" onclick="togglePwVisibility()">
                                 <i class="bi bi-eye" id="pw-toggle-icon"></i>
                             </button>
                         </div>
                         <div class="form-text">Confirm your identity before logging out.</div>
                     </div>
-
-                    <!-- Divider tipis -->
                     <hr style="border-color:#f0f0f0;margin:18px 0 16px">
-
-                    <!-- Buttons -->
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-danger fw-bold"
                                 style="border-radius:10px;font-size:13.5px;padding:10px"
                                 onclick="return validateLogout()">
-                                Yes, Logout
+                            Yes, Logout
                         </button>
                         <button type="button" class="btn btn-light fw-semibold"
                                 style="border-radius:10px;font-size:13px;padding:9px;color:#6c757d"
@@ -877,7 +972,6 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
                             Cancel
                         </button>
                     </div>
-
                 </div>
             </form>
         </div>
@@ -893,7 +987,19 @@ body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verda
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ── Toggle label Add/Edit ─────────────────────────────────────────────────────
+/* ── Sidebar mobile ──────────────────────────────────────────────────────── */
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+/* ── Toggle label Add/Edit ───────────────────────────────────────────────── */
 document.getElementById('add-active').addEventListener('change', function() {
     document.getElementById('add-active-label').textContent = this.checked ? 'Active' : 'Inactive';
 });
@@ -901,14 +1007,14 @@ document.getElementById('edit-active').addEventListener('change', function() {
     document.getElementById('edit-active-label').textContent = this.checked ? 'Active' : 'Inactive';
 });
 
-// ── Open Add Staff ────────────────────────────────────────────────────────────
+/* ── Open Add Staff ──────────────────────────────────────────────────────── */
 function openAddStaff() {
     document.getElementById('addStaffForm').reset();
     document.getElementById('add-active-label').textContent = 'Active';
     new bootstrap.Modal(document.getElementById('addStaffModal')).show();
 }
 
-// ── Open Edit Staff ───────────────────────────────────────────────────────────
+/* ── Open Edit Staff ─────────────────────────────────────────────────────── */
 function openEditStaff(st) {
     document.getElementById('edit-id').value      = st.id_staff;
     document.getElementById('edit-nama').value    = st.nama_staff   || '';
@@ -923,7 +1029,7 @@ function openEditStaff(st) {
     new bootstrap.Modal(document.getElementById('editStaffModal')).show();
 }
 
-// ── Detail Modal ──────────────────────────────────────────────────────────────
+/* ── Detail Modal ────────────────────────────────────────────────────────── */
 function detailRow(label, value) {
     return `<div class="detail-row">
         <span class="detail-label">${label}</span>
@@ -960,66 +1066,52 @@ function openDetail(st, color, initials) {
     new bootstrap.Modal(document.getElementById('detailModal')).show();
 }
 
-// ── Logout Modal ──────────────────────────────────────────────────────────────
+/* ── Logout ──────────────────────────────────────────────────────────────── */
 function openLogoutModal() {
     clearLogoutForm();
     new bootstrap.Modal(document.getElementById('logoutModal')).show();
-    // Fokus ke input password setelah modal terbuka
     document.getElementById('logoutModal').addEventListener('shown.bs.modal', function onShown() {
         document.getElementById('logout-pw').focus();
         this.removeEventListener('shown.bs.modal', onShown);
     });
 }
-
 function clearLogoutForm() {
     document.getElementById('logout-pw').value = '';
     document.getElementById('logout-js-error').style.display = 'none';
-    // Reset icon show/hide
     document.getElementById('logout-pw').type = 'password';
     document.getElementById('pw-toggle-icon').className = 'bi bi-eye';
 }
-
 function validateLogout() {
     const pw  = document.getElementById('logout-pw').value.trim();
     const err = document.getElementById('logout-js-error');
-    const msg = document.getElementById('logout-js-error-msg');
     if (pw === '') {
-        msg.textContent = 'Password tidak boleh kosong.';
+        document.getElementById('logout-js-error-msg').textContent = 'Password tidak boleh kosong.';
         err.style.display = 'flex';
         document.getElementById('logout-pw').focus();
         return false;
     }
     err.style.display = 'none';
-    return true; // lanjut submit
+    return true;
 }
-
 function togglePwVisibility() {
     const input = document.getElementById('logout-pw');
     const icon  = document.getElementById('pw-toggle-icon');
-    if (input.type === 'password') {
-        input.type       = 'text';
-        icon.className   = 'bi bi-eye-slash';
-    } else {
-        input.type       = 'password';
-        icon.className   = 'bi bi-eye';
-    }
+    if (input.type === 'password') { input.type = 'text';     icon.className = 'bi bi-eye-slash'; }
+    else                           { input.type = 'password'; icon.className = 'bi bi-eye'; }
 }
-
-// Buka logout modal otomatis jika ada error password dari PHP
 <?php if(!empty($logout_error)): ?>
     window.addEventListener('DOMContentLoaded', () => {
         new bootstrap.Modal(document.getElementById('logoutModal')).show();
     });
 <?php endif; ?>
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+/* ── Toast ───────────────────────────────────────────────────────────────── */
 function showToast(msg) {
     const t = document.getElementById('toastNotif');
     document.getElementById('toastMsg').textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3500);
 }
-
 <?php if(isset($_GET['added'])): ?>
     window.addEventListener('DOMContentLoaded', () => showToast('Staff berhasil ditambahkan! 🎉'));
 <?php elseif(isset($_GET['edited'])): ?>

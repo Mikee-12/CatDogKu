@@ -163,24 +163,25 @@ function pg_qs($page, $filter_status, $filter_payment, $search) {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <style>
-/* ── Base ──────────────────────────────────────────────────────────────── */
+/* ── Base ── */
 body {
     background-color: #f4f7f6;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0; padding: 0;
 }
 
-/* ── Sidebar (identical to dashboard) ─────────────────────────────────── */
+/* ── Sidebar ── */
 .sidebar {
     width: 260px;
     position: fixed;
     top: 0; left: 0;
     height: 100vh;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 1050;
     background-color: #2c3e50;
     color: #fff;
     box-shadow: 4px 0 10px rgba(0,0,0,.05);
+    transition: transform .3s ease;
 }
 .sidebar-brand {
     font-size: 1.25rem;
@@ -207,16 +208,45 @@ body {
 .sidebar a.logout-link:hover {
     background-color: rgba(231,76,60,.2);
     color: #e74c3c;
+    transform: none;
 }
 
-/* ── Layout ─────────────────────────────────────────────────────────────── */
+/* ── Sidebar overlay ── */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 1040;
+}
+.sidebar-overlay.show { display: block; }
+
+/* ── Topbar (mobile only) ── */
+.topbar {
+    display: none;
+    position: sticky; top: 0; z-index: 1030;
+    background: #2c3e50; color: #fff;
+    padding: 12px 16px;
+    align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.topbar-brand { font-size: 1rem; font-weight: 700; letter-spacing: .5px; }
+.topbar-right  { display: flex; align-items: center; gap: 12px; }
+.btn-hamburger {
+    background: none; border: none; color: #fff;
+    font-size: 1.4rem; cursor: pointer; padding: 4px;
+    display: flex; align-items: center; transition: opacity .2s;
+}
+.btn-hamburger:hover { opacity: .8; }
+
+/* ── Layout ── */
 .main-content {
     margin-left: 260px;
     width: calc(100% - 260px);
     min-height: 100vh;
 }
 
-/* ── Stat chips ──────────────────────────────────────────────────────────── */
+/* ── Stat chips ── */
 .stat-chip {
     background: #fff;
     border-radius: 14px;
@@ -250,7 +280,7 @@ body {
     font-weight: 500;
 }
 
-/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+/* ── Toolbar ── */
 .toolbar {
     background: #fff;
     border-radius: 14px;
@@ -279,9 +309,10 @@ body {
     font-size: 12px;
     font-weight: 600;
     padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
-
-/* Tambahkan ini */
 .btn-outline-secondary.btn-filter {
     border: 1.5px solid #dee2e6;
     color: #6c757d;
@@ -293,7 +324,7 @@ body {
     border-color: #adb5bd;
 }
 
-/* ── Table card ──────────────────────────────────────────────────────────── */
+/* ── Table card ── */
 .table-card {
     background: #fff;
     border-radius: 16px;
@@ -306,6 +337,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 .table > thead > tr > th {
     font-size: 11px;
@@ -327,7 +360,21 @@ body {
 .table > tbody > tr:last-child > td { border-bottom: none; }
 .table > tbody > tr:hover > td { background: #f8f9fa; }
 
-/* ── Service tags ────────────────────────────────────────────────────────── */
+/* ── Mobile reservation cards ── */
+.res-mobile-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    border: 1px solid #f0f0f0;
+}
+.res-mobile-card .card-title  { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 2px; }
+.res-mobile-card .card-sub    { font-size: 12px; color: #6c757d; margin-bottom: 10px; }
+.res-mobile-card .card-meta   { font-size: 12px; color: #555; margin-bottom: 8px; }
+.res-mobile-card .card-actions{ display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Service tags ── */
 .service-tag {
     display: inline-block;
     background: #eaf4fd;
@@ -340,7 +387,7 @@ body {
     white-space: nowrap;
 }
 
-/* ── Action buttons ──────────────────────────────────────────────────────── */
+/* ── Action buttons ── */
 .btn-action {
     padding: 4px 10px;
     font-size: 11.5px;
@@ -349,15 +396,18 @@ body {
     border: none;
     cursor: pointer;
     transition: opacity .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 .btn-action:hover { opacity: .8; }
-.btn-view { background: #eaf4fd; color: #2980b9; }
+.btn-view     { background: #eaf4fd; color: #2980b9; }
 .btn-confirm  { background: #d1f2eb; color: #1a7a4a; }
 .btn-progress { background: #d6eaf8; color: #1a5276; }
 .btn-complete { background: #d5f5e3; color: #145a32; }
 .btn-cancel   { background: #fdecea; color: #922b21; }
 
-/* ── Pagination ──────────────────────────────────────────────────────────── */
+/* ── Pagination ── */
 .pagination .page-link {
     border-radius: 8px !important;
     margin: 0 2px;
@@ -376,7 +426,7 @@ body {
     color: #2980b9;
 }
 
-/* ── Detail modal ────────────────────────────────────────────────────────── */
+/* ── Detail modal ── */
 .modal-content { border-radius: 18px; border: none; }
 .modal-header  { border-bottom: 1px solid #f0f0f0; padding: 20px 24px; }
 .modal-body    { padding: 24px; }
@@ -396,7 +446,7 @@ body {
 }
 .detail-value { color: #1a1a2e; }
 
-/* ── Logout modal ────────────────────────────────────────────────────────── */
+/* ── Logout modal ── */
 .logout-icon-wrap {
     width: 64px; height: 64px; border-radius: 18px;
     background: rgba(231,76,60,.1);
@@ -405,42 +455,109 @@ body {
     margin: 0 auto 6px;
 }
 .logout-modal-error {
-    color: #dc3545;
-    font-size: 14px;
-    margin-top: 8px;
-    display: none;
+    background: #fdecea;
+    border: 1.5px solid #f5c6c6;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #922b21;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
 }
-.pw-wrapper {
-    position: relative;
-}
+.pw-wrapper { position: relative; }
+.pw-wrapper .form-control { padding-right: 50px; }
 .pw-toggle {
     position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #6c757d;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
+    right: 0; top: 0; bottom: 0;
+    width: 50px;
+    border: none; background: none;
+    display: flex; align-items: center; justify-content: center;
+    color: #6c757d; cursor: pointer; font-size: 16px;
+    transition: color .2s;
 }
-.pw-toggle:hover {
-    color: #495057;
-}
+.pw-toggle:hover { color: #495057; }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+.pagination-info { }
+
+/* ════════════════
+   RESPONSIVE
+════════════════ */
 @media (max-width: 992px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
     .main-content { margin-left: 0; width: 100%; }
+    .topbar { display: flex; }
+}
+
+@media (max-width: 768px) {
+    .main-content { padding: 0 !important; }
+    .page-inner { padding: 16px; }
+
+    /* Stat chips: 2 kolom */
+    .chips-grid { grid-template-columns: 1fr 1fr !important; }
+    .chip-revenue { grid-column: span 2; }
+
+    /* Toolbar stack */
+    .toolbar { padding: 14px; gap: 8px; }
+    .toolbar .flex-grow-1 { min-width: 100% !important; order: -1; }
+    .toolbar .form-select { width: 100% !important; }
+    .toolbar .btn-filter  { width: 100%; justify-content: center; }
+    .toolbar > span.ms-auto { display: none; }
+
+    /* Table hidden, mobile cards shown */
+    .desktop-table { display: none !important; }
+    .mobile-cards  { display: block !important; }
+
+    .pagination-info { display: none; }
+    .table-card-header { padding: 14px 16px; }
+    .table-card-header h5 { font-size: 14px; }
+}
+
+@media (min-width: 769px) {
+    .mobile-cards  { display: none !important; }
+    .desktop-table { display: block !important; }
+}
+
+@media (max-width: 480px) {
+    .page-inner { padding: 12px; }
+    .stat-chip .count { font-size: 18px; }
+    .stat-chip { padding: 14px 14px; gap: 10px; }
 }
 </style>
 </head>
 <body>
 
+<!-- ══ SIDEBAR OVERLAY ══ -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ══ TOPBAR (mobile) ══ -->
+<div class="topbar" id="topbar">
+    <button class="btn-hamburger" onclick="openSidebar()" aria-label="Open menu">
+        <i class="bi bi-list"></i>
+    </button>
+    <span class="topbar-brand">CatDogKu Admin</span>
+    <div class="topbar-right">
+        <a href="admin_reserve.php?status=pending" class="position-relative text-decoration-none" style="color:#fff">
+            <i class="bi bi-bell fs-5"></i>
+            <?php if($stat_pending > 0): ?>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px"><?= $stat_pending ?></span>
+            <?php endif; ?>
+        </a>
+    </div>
+</div>
+
 <!-- ═══════════════════════════ SIDEBAR ════════════════════════════════════ -->
 <div class="sidebar p-3" id="sidebar">
+    <!-- Close button (mobile) -->
+    <div class="d-flex align-items-center justify-content-between mb-2 d-lg-none">
+        <span style="font-size:.9rem;font-weight:600;color:rgba(255,255,255,.6);">Menu</span>
+        <button class="btn-hamburger" onclick="closeSidebar()" style="font-size:1.2rem">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
     <div class="sidebar-brand text-center py-3 mb-4 fw-bold text-white">
         CatDogKu Admin
     </div>
@@ -478,7 +595,6 @@ body {
     </a>
 
     <div class="mt-4 pt-3 border-top border-secondary">
-        <!-- Logout: trigger modal, bukan href langsung -->
         <a href="#" class="logout-link fw-bold" onclick="openLogoutModal(); return false;">
             <i class="bi bi-box-arrow-left me-2 fs-5 align-middle"></i> Logout
         </a>
@@ -487,59 +603,64 @@ body {
 
 <!-- ═══════════════════════════ MAIN CONTENT ═══════════════════════════════ -->
 <div class="main-content p-4 p-md-5">
+<div class="page-inner">
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h2 class="fw-bold text-dark mb-0">Reservations</h2>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            <a href="admin_reserve.php?status=pending" class="position-relative text-decoration-none text-secondary">
-                <i class="bi bi-bell fs-5"></i>
-                <?php if($stat_pending > 0): ?>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px"><?= $stat_pending ?></span>
-                <?php endif; ?>
-            </a>
-        </div>
+    <!-- Header desktop -->
+    <div class="d-none d-lg-flex justify-content-between align-items-center mb-5">
+        <h2 class="fw-bold text-dark mb-0">Reservations</h2>
+        <a href="admin_reserve.php?status=pending" class="position-relative text-decoration-none text-secondary">
+            <i class="bi bi-bell fs-5"></i>
+            <?php if($stat_pending > 0): ?>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px"><?= $stat_pending ?></span>
+            <?php endif; ?>
+        </a>
     </div>
 
-    <!-- ── Status summary chips ──────────────────────────────────────────── -->
-    <div class="row g-3 mb-4">
+    <!-- Header mobile -->
+    <div class="d-lg-none mb-3">
+        <h4 class="fw-bold text-dark mb-0">Reservations</h4>
+    </div>
+
+    <!-- ── Status summary chips ── -->
+    <div class="chips-grid mb-4" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
         <?php
         $chips = [
-    ['label' => 'Pending',     'count' => $stat_pending,   'color' => '#f59e0b', 'status' => 'pending',     'col' => 'col-6 col-md-4 col-lg-2'],
-    ['label' => 'Confirmed',   'count' => $stat_confirmed,  'color' => '#06b6d4', 'status' => 'confirmed',   'col' => 'col-6 col-md-4 col-lg-2'],
-    ['label' => 'In Progress', 'count' => $stat_progress,   'color' => '#6366f1', 'status' => 'in_progress', 'col' => 'col-6 col-md-4 col-lg-2'],
-    ['label' => 'Completed',   'count' => $stat_completed,  'color' => '#22c55e', 'status' => 'completed',   'col' => 'col-6 col-md-4 col-lg-2'],
-    ['label' => 'Revenue',     'count' => 'Rp '.number_format($stat_revenue,0,',','.'), 'color' => '#8b5cf6', 'status' => '', 'col' => 'col-12 col-md-8 col-lg-4'],
-];
+            ['label'=>'Pending',     'count'=>$stat_pending,   'color'=>'#f59e0b', 'status'=>'pending',     'extra'=>''],
+            ['label'=>'Confirmed',   'count'=>$stat_confirmed,  'color'=>'#06b6d4', 'status'=>'confirmed',   'extra'=>''],
+            ['label'=>'In Progress', 'count'=>$stat_progress,   'color'=>'#6366f1', 'status'=>'in_progress', 'extra'=>''],
+            ['label'=>'Completed',   'count'=>$stat_completed,  'color'=>'#22c55e', 'status'=>'completed',   'extra'=>''],
+            ['label'=>'Revenue',     'count'=>'Rp '.number_format($stat_revenue,0,',','.'), 'color'=>'#8b5cf6', 'status'=>'', 'extra'=>'chip-revenue'],
+        ];
         foreach ($chips as $c):
-            $href = $c['status'] ? 'admin_reserve.php?status=' . $c['status'] : 'admin_reserve.php';
+            $href       = $c['status'] ? 'admin_reserve.php?status=' . $c['status'] : 'admin_reserve.php';
             $active_cls = ($filter_status === $c['status'] && $c['status']) ? 'border border-2' : '';
         ?>
-        <div class="<?= $c['col'] ?>">
-            <a href="<?= $href ?>" class="stat-chip <?= $active_cls ?>" style="<?= ($filter_status===$c['status'] && $c['status']) ? 'border-color:'.$c['color'].'!important' : '' ?>">
-                <div class="stat-dot" style="background:<?= $c['color'] ?>"></div>
-                <div>
-                    <div class="count"><?= $c['count'] ?></div>
-                    <div class="label"><?= $c['label'] ?></div>
-                </div>
-            </a>
-        </div>
+        <a href="<?= $href ?>"
+           class="stat-chip <?= $active_cls ?> <?= $c['extra'] ?>"
+           style="<?= ($filter_status===$c['status'] && $c['status']) ? 'border-color:'.$c['color'].'!important' : '' ?>">
+            <div class="stat-dot" style="background:<?= $c['color'] ?>"></div>
+            <div>
+                <div class="count"><?= $c['count'] ?></div>
+                <div class="label"><?= $c['label'] ?></div>
+            </div>
+        </a>
         <?php endforeach; ?>
     </div>
 
-    <!-- ── Toolbar / Filters ─────────────────────────────────────────────── -->
+    <!-- ── Toolbar / Filters ── -->
     <form method="GET" action="admin_reserve.php">
         <div class="toolbar mb-4">
             <!-- Search -->
             <div class="flex-grow-1" style="min-width:180px">
                 <div class="input-group" style="height:40px">
-                    <span class="input-group-text bg-white border-end-0" style="border-radius:10px 0 0 10px;border:1.5px solid #e9ecef;border-right:none">
+                    <span class="input-group-text bg-white border-end-0"
+                          style="border-radius:10px 0 0 10px;border:1.5px solid #e9ecef;border-right:none">
                         <i class="bi bi-search text-muted" style="font-size:13px"></i>
                     </span>
-                    <input type="text" name="q" class="form-control border-start-0" style="border-radius:0 10px 10px 0;border:1.5px solid #e9ecef;border-left:none"
-                        placeholder="Search customer, pet, ID…" value="<?= htmlspecialchars($search ?? '') ?>">
+                    <input type="text" name="q" class="form-control border-start-0"
+                           style="border-radius:0 10px 10px 0;border:1.5px solid #e9ecef;border-left:none"
+                           placeholder="Search customer, pet, ID…"
+                           value="<?= htmlspecialchars($search ?? '') ?>">
                 </div>
             </div>
 
@@ -563,32 +684,36 @@ body {
                 <i class="bi bi-funnel me-1"></i> Filter
             </button>
             <?php if($filter_status || $filter_payment || $search): ?>
-                <a href="admin_reserve.php" class="btn btn-filter" 
-   style="border:1.5px solid #dee2e6;color:#6c757d;background:#fff;display:inline-flex;align-items:center">
-    <i class="bi bi-x-lg me-1"></i> Reset
-</a>
+                <a href="admin_reserve.php" class="btn btn-filter"
+                   style="border:1.5px solid #dee2e6;color:#6c757d;background:#fff;">
+                    <i class="bi bi-x-lg me-1"></i> Reset
+                </a>
             <?php endif; ?>
 
-            <!-- Result count -->
             <span class="ms-auto text-muted" style="font-size:13px;white-space:nowrap">
                 <b><?= $total_rows ?></b> reservations found
             </span>
         </div>
     </form>
 
-    <!-- ── Table ─────────────────────────────────────────────────────────── -->
+    <!-- ── Table Card ── -->
     <div class="table-card mb-4">
         <div class="table-card-header">
             <h5 class="fw-bold mb-0" style="font-size:15px">
                 All Reservations
                 <?php if($filter_status): ?>
-                    <span class="badge bg-primary ms-2" style="font-size:12px;font-weight:500"><?= ucfirst(str_replace('_',' ',$filter_status)) ?></span>
+                    <span class="badge bg-primary ms-2" style="font-size:12px;font-weight:500">
+                        <?= ucfirst(str_replace('_',' ',$filter_status)) ?>
+                    </span>
                 <?php endif; ?>
             </h5>
-            <span class="text-muted" style="font-size:13px">Page <?= $current_pg ?> of <?= $total_pages ?></span>
+            <span class="text-muted pagination-info" style="font-size:13px">
+                Page <?= $current_pg ?> of <?= $total_pages ?>
+            </span>
         </div>
 
-        <div class="table-responsive">
+        <!-- DESKTOP TABLE -->
+        <div class="table-responsive desktop-table">
             <table class="table mb-0">
                 <thead>
                     <tr>
@@ -606,7 +731,7 @@ body {
                 <tbody>
                 <?php if (empty($reservations)): ?>
                     <tr>
-                        <td colspan="10" class="text-center text-muted py-5">
+                        <td colspan="9" class="text-center text-muted py-5">
                             <i class="bi bi-calendar-x fs-2 d-block mb-2 text-secondary"></i>
                             No reservations found
                         </td>
@@ -636,19 +761,13 @@ body {
                     $extra        = count($services_arr) - 2;
                 ?>
                 <tr>
-
-                    <!-- Customer -->
                     <td>
                         <div class="fw-semibold" style="font-size:13.5px"><?= htmlspecialchars($r['nama_user'] ?? '—') ?></div>
                         <div class="text-muted" style="font-size:11.5px"><?= htmlspecialchars($r['email'] ?? '') ?></div>
                     </td>
-
-                    <!-- Pet -->
                     <td>
                         <div class="fw-semibold" style="font-size:13.5px"><?= htmlspecialchars($r['nama_pet'] ?? '—') ?></div>
                     </td>
-
-                    <!-- Services -->
                     <td>
                         <?php foreach ($shown as $svc): ?>
                             <span class="service-tag"><?= htmlspecialchars($svc) ?></span>
@@ -659,53 +778,38 @@ body {
                             <span class="text-muted" style="font-size:12px">—</span>
                         <?php endif; ?>
                     </td>
-
-                    <!-- Start -->
                     <td style="font-size:12.5px">
                         <?= $r['waktu_mulai'] ? date('d M Y', strtotime($r['waktu_mulai'])) : '—' ?>
                         <?php if ($r['waktu_mulai']): ?>
                             <div class="text-muted" style="font-size:11px"><?= date('H:i', strtotime($r['waktu_mulai'])) ?></div>
                         <?php endif; ?>
                     </td>
-
-                    <!-- End -->
                     <td style="font-size:12.5px">
                         <?= $r['waktu_selesai'] ? date('d M Y', strtotime($r['waktu_selesai'])) : '—' ?>
                         <?php if ($r['waktu_selesai']): ?>
                             <div class="text-muted" style="font-size:11px"><?= date('H:i', strtotime($r['waktu_selesai'])) ?></div>
                         <?php endif; ?>
                     </td>
-
-                    <!-- Total -->
                     <td>
                         <span class="fw-bold text-success" style="font-size:13px">
                             Rp <?= $r['total_bayar'] ? number_format($r['total_bayar'],0,',','.') : '0' ?>
                         </span>
                     </td>
-
-                    <!-- Status -->
                     <td>
                         <span class="badge <?= $sb_cls ?>" style="font-size:11.5px;padding:5px 9px"><?= $sb_lbl ?></span>
                     </td>
-
-                    <!-- Payment -->
                     <td>
                         <span class="badge <?= $pb_cls ?>" style="font-size:11.5px;padding:5px 9px"><?= $pb_lbl ?></span>
                         <?php if ($r['metode_bayar']): ?>
                             <div class="text-muted" style="font-size:11px;margin-top:2px"><?= htmlspecialchars($r['metode_bayar']) ?></div>
                         <?php endif; ?>
                     </td>
-
-                    <!-- Actions -->
                     <td>
                         <div class="d-flex gap-1 flex-wrap">
-                            <!-- View detail -->
                             <button class="btn-action btn-view"
                                 onclick="openDetail(<?= htmlspecialchars(json_encode($r), ENT_QUOTES) ?>)">
                                 <i class="bi bi-eye-fill"></i>
                             </button>
-
-                            <!-- Quick status change -->
                             <?php if ($status === 'pending'): ?>
                                 <form method="POST" style="display:inline">
                                     <input type="hidden" name="id_reservation" value="<?= $r['id_reservation'] ?>">
@@ -748,10 +852,113 @@ body {
             </table>
         </div>
 
+        <!-- MOBILE CARDS -->
+        <div class="mobile-cards p-3">
+            <?php if (empty($reservations)): ?>
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-calendar-x fs-2 d-block mb-2 text-secondary"></i>
+                    No reservations found
+                </div>
+            <?php else: ?>
+            <?php foreach ($reservations as $r):
+                $status = $r['status'];
+                $pay    = $r['status_bayar'] ?? 'unpaid';
+                $status_badge = [
+                    'pending'     => ['bg-warning text-dark', 'Pending'],
+                    'confirmed'   => ['bg-info text-white',   'Confirmed'],
+                    'in_progress' => ['bg-primary text-white','In Progress'],
+                    'completed'   => ['bg-success text-white','Completed'],
+                    'cancelled'   => ['bg-danger text-white', 'Cancelled'],
+                ];
+                $pay_badge = [
+                    'paid'    => ['bg-success text-white', 'Paid'],
+                    'unpaid'  => ['bg-danger text-white',  'Unpaid'],
+                    'partial' => ['bg-warning text-dark',  'Partial'],
+                ];
+                [$sb_cls, $sb_lbl] = $status_badge[$status]  ?? ['bg-secondary text-white', $status];
+                [$pb_cls, $pb_lbl] = $pay_badge[$pay]         ?? ['bg-secondary text-white', $pay];
+                $services_arr = $r['services_list'] ? explode(', ', $r['services_list']) : [];
+                $shown        = array_slice($services_arr, 0, 2);
+                $extra        = count($services_arr) - 2;
+            ?>
+            <div class="res-mobile-card">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="card-title"><?= htmlspecialchars($r['nama_user'] ?? '—') ?></div>
+                    <span class="badge <?= $sb_cls ?>" style="font-size:10.5px;padding:4px 8px"><?= $sb_lbl ?></span>
+                </div>
+                <div class="card-sub"><?= htmlspecialchars($r['email'] ?? '') ?></div>
+                <div class="card-meta">
+                    <span class="fw-semibold">Pet:</span> <?= htmlspecialchars($r['nama_pet'] ?? '—') ?>
+                    &nbsp;·&nbsp;
+                    <span class="fw-bold text-success">Rp <?= $r['total_bayar'] ? number_format($r['total_bayar'],0,',','.') : '0' ?></span>
+                </div>
+                <div class="mb-2" style="font-size:12px;color:#555">
+                    <?php if($r['waktu_mulai']): ?>
+                        <i class="bi bi-calendar3 me-1"></i>
+                        <?= date('d M Y H:i', strtotime($r['waktu_mulai'])) ?>
+                        <?php if($r['waktu_selesai']): ?> → <?= date('d M Y H:i', strtotime($r['waktu_selesai'])) ?><?php endif; ?>
+                    <?php endif; ?>
+                </div>
+                <div class="mb-2">
+                    <?php foreach ($shown as $svc): ?>
+                        <span class="service-tag"><?= htmlspecialchars($svc) ?></span>
+                    <?php endforeach; ?>
+                    <?php if ($extra > 0): ?>
+                        <span class="service-tag" style="background:#e9ecef;color:#6c757d">+<?= $extra ?> more</span>
+                    <?php endif; ?>
+                </div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="badge <?= $pb_cls ?>" style="font-size:10.5px;padding:4px 8px"><?= $pb_lbl ?></span>
+                    <div class="card-actions">
+                        <button class="btn-action btn-view"
+                            onclick="openDetail(<?= htmlspecialchars(json_encode($r), ENT_QUOTES) ?>)">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                        <?php if ($status === 'pending'): ?>
+                            <form method="POST" style="display:inline">
+                                <input type="hidden" name="id_reservation" value="<?= $r['id_reservation'] ?>">
+                                <input type="hidden" name="action" value="confirm">
+                                <button type="submit" class="btn-action btn-confirm">
+                                    <i class="bi bi-check2"></i> Confirm
+                                </button>
+                            </form>
+                            <form method="POST" style="display:inline">
+                                <input type="hidden" name="id_reservation" value="<?= $r['id_reservation'] ?>">
+                                <input type="hidden" name="action" value="cancel">
+                                <button type="submit" class="btn-action btn-cancel"
+                                    onclick="return confirm('Cancel this reservation?')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </form>
+                        <?php elseif ($status === 'confirmed'): ?>
+                            <form method="POST" style="display:inline">
+                                <input type="hidden" name="id_reservation" value="<?= $r['id_reservation'] ?>">
+                                <input type="hidden" name="action" value="progress">
+                                <button type="submit" class="btn-action btn-progress">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                            </form>
+                        <?php elseif ($status === 'in_progress'): ?>
+                            <form method="POST" style="display:inline">
+                                <input type="hidden" name="id_reservation" value="<?= $r['id_reservation'] ?>">
+                                <input type="hidden" name="action" value="complete">
+                                <button type="submit" class="btn-action btn-complete">
+                                    <i class="bi bi-check2-all"></i> Done
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
         <!-- Pagination -->
         <?php if ($total_pages > 1): ?>
-        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top" style="background:#fafafa">
-            <span class="text-muted" style="font-size:13px">
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top"
+             style="background:#fafafa;flex-wrap:wrap;gap:8px">
+            <span class="text-muted pagination-info" style="font-size:13px">
                 Showing <?= ($offset+1) ?>–<?= min($offset+$per_page, $total_rows) ?> of <?= $total_rows ?>
             </span>
             <nav>
@@ -785,6 +992,7 @@ body {
 
     </div><!-- /table-card -->
 
+</div><!-- /page-inner -->
 </div><!-- /main-content -->
 
 <!-- ═══════════════════════════ DETAIL MODAL ═══════════════════════════════ -->
@@ -799,8 +1007,6 @@ body {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-
-                <!-- Two column: Info + Payment -->
                 <div class="row g-4">
                     <div class="col-md-6">
                         <p class="fw-bold text-muted mb-3" style="font-size:11px;text-transform:uppercase;letter-spacing:.8px">
@@ -815,23 +1021,17 @@ body {
                         <div id="modal-payment"></div>
                     </div>
                 </div>
-
                 <hr class="my-3">
-
-                <!-- Services breakdown -->
                 <p class="fw-bold text-muted mb-3" style="font-size:11px;text-transform:uppercase;letter-spacing:.8px">
-                   Services Ordered
+                    Services Ordered
                 </p>
                 <div id="modal-services"></div>
-
-                <!-- Notes -->
                 <div id="modal-notes-wrap" class="mt-3" style="display:none">
                     <p class="fw-bold text-muted mb-2" style="font-size:11px;text-transform:uppercase;letter-spacing:.8px">
                         <i class="bi bi-chat-left-text me-1"></i> Notes
                     </p>
                     <div id="modal-notes" class="p-3" style="background:#f8f9fa;border-radius:10px;font-size:13.5px"></div>
                 </div>
-
             </div>
             <div class="modal-footer" style="border-top:1px solid #f0f0f0;padding:16px 24px">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius:10px">Close</button>
@@ -840,15 +1040,89 @@ body {
     </div>
 </div>
 
+<!-- ══════════════════ LOGOUT CONFIRMATION MODAL ══════════════════════════ -->
+<div class="modal fade" id="logoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        onclick="clearLogoutForm()"></button>
+            </div>
+            <form method="POST" action="admin_reserve.php" id="logoutForm">
+                <input type="hidden" name="confirm_logout" value="1">
+                <div class="modal-body pt-2">
+                    <div class="text-center mb-4">
+                        <div class="logout-icon-wrap">
+                            <i class="bi bi-box-arrow-left"></i>
+                        </div>
+                        <h5 class="fw-bold mt-3 mb-1" style="font-size:16px;color:#1a1a2e">Log Out Confirmation</h5>
+                        <p class="text-muted mb-0" style="font-size:13px">
+                            Enter your password to log out of this session.
+                        </p>
+                    </div>
+                    <?php if(!empty($logout_error)): ?>
+                    <div class="logout-modal-error">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <?= htmlspecialchars($logout_error) ?>
+                    </div>
+                    <?php endif; ?>
+                    <div class="logout-modal-error" id="logout-js-error" style="display:none">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span id="logout-js-error-msg">Password is required.</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:13px;font-weight:600;color:#555">
+                            Password <span class="text-danger">*</span>
+                        </label>
+                        <div class="pw-wrapper">
+                            <input type="password" name="logout_password" id="logout-pw"
+                                   class="form-control" placeholder="Enter your password" required
+                                   autocomplete="current-password">
+                            <button type="button" class="pw-toggle" onclick="togglePwVisibility()">
+                                <i class="bi bi-eye" id="pw-toggle-icon"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Confirm your identity before logging out.</div>
+                    </div>
+                    <hr style="border-color:#f0f0f0;margin:18px 0 16px">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger fw-bold"
+                                style="border-radius:10px;font-size:13.5px;padding:10px"
+                                onclick="return validateLogout()">
+                            Yes, Logout
+                        </button>
+                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal"
+                                style="border-radius:8px;font-size:13px" onclick="clearLogoutForm()">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+/* ── Sidebar ── */
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+/* ── Detail Modal ── */
 function fmt(date) {
     if (!date) return '—';
     const d = new Date(date);
     return d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})
            + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
-
 function statusBadge(s) {
     const map = {
         pending:     ['bg-warning text-dark', 'Pending'],
@@ -860,7 +1134,6 @@ function statusBadge(s) {
     const [cls, lbl] = map[s] || ['bg-secondary text-white', s];
     return `<span class="badge ${cls}" style="font-size:12px;padding:5px 10px">${lbl}</span>`;
 }
-
 function payBadge(s) {
     const map = {
         paid:    ['bg-success text-white','Paid'],
@@ -870,48 +1143,44 @@ function payBadge(s) {
     const [cls, lbl] = map[s] || ['bg-secondary text-white', s];
     return `<span class="badge ${cls}" style="font-size:12px;padding:5px 10px">${lbl}</span>`;
 }
-
 function row(label, value) {
     return `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`;
 }
-
 function openDetail(r) {
     const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+    document.getElementById('modal-title').textContent   = 'Reservation Details';
+    document.getElementById('modal-subtitle').textContent = 'Created: ' + fmt(r.created_at);
 
-    document.getElementById('modal-title').textContent =
-        'Reservation Details';
-    document.getElementById('modal-subtitle').textContent =
-        'Created: ' + fmt(r.created_at);
-
-    // Customer & Pet
     document.getElementById('modal-customer').innerHTML =
-        row('Customer',   r.nama_user  || '—') +
-        row('Email',      r.email      || '—') +
-        row('Pet',        r.nama_pet   || '—') +
-        row('Start',      fmt(r.waktu_mulai)) +
-        row('End',        fmt(r.waktu_selesai)) +
-        row('Status',     statusBadge(r.status));
+        row('Customer',  r.nama_user  || '—') +
+        row('Email',     r.email      || '—') +
+        row('Pet',       r.nama_pet   || '—') +
+        row('Start',     fmt(r.waktu_mulai)) +
+        row('End',       fmt(r.waktu_selesai)) +
+        row('Status',    statusBadge(r.status));
 
-    // Payment
     const total = r.total_bayar
         ? 'Rp ' + Number(r.total_bayar).toLocaleString('id-ID')
         : 'Rp 0';
     document.getElementById('modal-payment').innerHTML =
-        row('Total',    `<strong class="text-success" style="font-size:15px">${total}</strong>`) +
-        row('Status',   payBadge(r.status_bayar || 'unpaid')) +
-        row('Method',   r.metode_bayar || '—');
+        row('Total',  `<strong class="text-success" style="font-size:15px">${total}</strong>`) +
+        row('Status', payBadge(r.status_bayar || 'unpaid')) +
+        row('Method', r.metode_bayar || '—');
 
-    // Services
     const svcEl = document.getElementById('modal-services');
     if (r.services_list) {
         const svcs      = r.services_list.split(', ');
         const subtotals = r.subtotals_list ? r.subtotals_list.split(',') : [];
-        let html = '<div class="table-responsive"><table class="table table-sm mb-0" style="font-size:13.5px"><thead><tr><th style="padding:8px 12px;font-weight:600;color:#6c757d;font-size:11px;text-transform:uppercase">Service</th><th style="padding:8px 12px;font-weight:600;color:#6c757d;font-size:11px;text-transform:uppercase;text-align:right">Subtotal</th></tr></thead><tbody>';
+        let html = '<div class="table-responsive"><table class="table table-sm mb-0" style="font-size:13.5px"><thead><tr>'
+            + '<th style="padding:8px 12px;font-weight:600;color:#6c757d;font-size:11px;text-transform:uppercase">Service</th>'
+            + '<th style="padding:8px 12px;font-weight:600;color:#6c757d;font-size:11px;text-transform:uppercase;text-align:right">Subtotal</th>'
+            + '</tr></thead><tbody>';
         svcs.forEach((svc, i) => {
             const sub = subtotals[i]
                 ? 'Rp ' + Number(subtotals[i]).toLocaleString('id-ID')
                 : '—';
-            html += `<tr><td style="padding:10px 12px"><span class="service-tag">${svc.trim()}</span></td><td style="padding:10px 12px;text-align:right;font-weight:600;color:#198754">${sub}</td></tr>`;
+            html += `<tr><td style="padding:10px 12px"><span class="service-tag">${svc.trim()}</span></td>`
+                  + `<td style="padding:10px 12px;text-align:right;font-weight:600;color:#198754">${sub}</td></tr>`;
         });
         html += '</tbody></table></div>';
         svcEl.innerHTML = html;
@@ -919,7 +1188,6 @@ function openDetail(r) {
         svcEl.innerHTML = '<p class="text-muted" style="font-size:13px">No services recorded.</p>';
     }
 
-    // Notes
     const notesWrap = document.getElementById('modal-notes-wrap');
     if (r.catatan) {
         document.getElementById('modal-notes').textContent = r.catatan;
@@ -927,136 +1195,46 @@ function openDetail(r) {
     } else {
         notesWrap.style.display = 'none';
     }
-
     modal.show();
 }
-</script>
 
-<!-- ══════════════════ LOGOUT CONFIRMATION MODAL ══════════════════════════ -->
-<div class="modal fade form-modal" id="logoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        onclick="clearLogoutForm()"></button>
-            </div>
-            <form method="POST" action="admin_reserve.php" id="logoutForm">
-                <input type="hidden" name="confirm_logout" value="1">
-                <div class="modal-body pt-2">
-
-                    <!-- Icon + judul -->
-                    <div class="text-center mb-4">
-                        <div class="logout-icon-wrap">
-                            <i class="bi bi-box-arrow-left"></i>
-                        </div>
-                        <h5 class="fw-bold mt-3 mb-1" style="font-size:16px;color:#1a1a2e">Log Out Confirmation</h5>
-                        <p class="text-muted mb-0" style="font-size:13px">
-                            Enter your password to log out of this session.
-                        </p>
-                    </div>
-
-                    <!-- Error message (tampil jika password salah dari PHP) -->
-                    <?php if(!empty($logout_error)): ?>
-                    <div class="logout-modal-error">
-                        <i class="bi bi-exclamation-circle-fill"></i>
-                        <?= htmlspecialchars($logout_error) ?>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- Error JS (salah pw tanpa reload) -->
-                    <div class="logout-modal-error" id="logout-js-error" style="display:none">
-                        <i class="bi bi-exclamation-circle-fill"></i>
-                        <span id="logout-js-error-msg">Password is required.</span>
-                    </div>
-
-                    <!-- Password field -->
-                    <div class="mb-3">
-                        <label class="form-label">Password <span class="text-danger">*</span></label>
-                        <div class="pw-wrapper">
-                            <input type="password" name="logout_password" id="logout-pw"
-                                   class="form-control" placeholder="Enter your password" required
-                                   autocomplete="current-password">
-                            <button type="button" class="pw-toggle" id="pw-toggle-btn"
-                                    onclick="togglePwVisibility()">
-                                <i class="bi bi-eye" id="pw-toggle-icon"></i>
-                            </button>
-                        </div>
-                        <div class="form-text">Confirm your identity before logging out.</div>
-                    </div>
-
-                    <!-- Divider tipis -->
-                    <hr style="border-color:#f0f0f0;margin:18px 0 16px">
-
-                    <!-- Buttons -->
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-danger fw-bold"
-                                style="border-radius:10px;font-size:13.5px;padding:10px"
-                                onclick="return validateLogout()">
-                                Yes, Logout
-                        </button>
-                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal"
-                                style="border-radius:8px;font-size:13px" onclick="clearLogoutForm()">
-                            Close
-                        </button>
-                    </div>
-
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-// ── Logout Modal ──────────────────────────────────────────────────────────────
+/* ── Logout ── */
 function openLogoutModal() {
     clearLogoutForm();
     new bootstrap.Modal(document.getElementById('logoutModal')).show();
-    // Fokus ke input password setelah modal terbuka
     document.getElementById('logoutModal').addEventListener('shown.bs.modal', function onShown() {
         document.getElementById('logout-pw').focus();
         this.removeEventListener('shown.bs.modal', onShown);
     });
 }
-
 function clearLogoutForm() {
     document.getElementById('logout-pw').value = '';
     document.getElementById('logout-js-error').style.display = 'none';
-    // Reset icon show/hide
     document.getElementById('logout-pw').type = 'password';
     document.getElementById('pw-toggle-icon').className = 'bi bi-eye';
 }
-
 function validateLogout() {
     const pw  = document.getElementById('logout-pw').value.trim();
     const err = document.getElementById('logout-js-error');
-    const msg = document.getElementById('logout-js-error-msg');
     if (pw === '') {
-        msg.textContent = 'Password tidak boleh kosong.';
+        document.getElementById('logout-js-error-msg').textContent = 'Password is required.';
         err.style.display = 'flex';
         document.getElementById('logout-pw').focus();
         return false;
     }
     err.style.display = 'none';
-    return true; // lanjut submit
+    return true;
 }
-
 function togglePwVisibility() {
     const input = document.getElementById('logout-pw');
     const icon  = document.getElementById('pw-toggle-icon');
-    if (input.type === 'password') {
-        input.type       = 'text';
-        icon.className   = 'bi bi-eye-slash';
-    } else {
-        input.type       = 'password';
-        icon.className   = 'bi bi-eye';
-    }
+    if (input.type === 'password') { input.type = 'text';     icon.className = 'bi bi-eye-slash'; }
+    else                           { input.type = 'password'; icon.className = 'bi bi-eye'; }
 }
-
-// Buka logout modal otomatis jika ada error password dari PHP
 <?php if(!empty($logout_error)): ?>
-    window.addEventListener('DOMContentLoaded', () => {
-        new bootstrap.Modal(document.getElementById('logoutModal')).show();
-    });
+window.addEventListener('DOMContentLoaded', () => {
+    new bootstrap.Modal(document.getElementById('logoutModal')).show();
+});
 <?php endif; ?>
 </script>
 </body>

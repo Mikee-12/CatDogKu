@@ -41,13 +41,11 @@ function db_rows($conn, $sql) {
     return $rows;
 }
 
-$days_order = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+$days_order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
 // ── Handle POST actions ────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['confirm_logout'])) {
 
-
-    // ── DELETE SCHEDULE ───────────────────────────────────────────────────────
     if (isset($_POST['delete_schedule'])) {
         $id = (int)$_POST['id_schedule'];
         mysqli_query($conn, "DELETE FROM staff_schedules WHERE id_schedule=$id");
@@ -59,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['confirm_logout'])) {
         exit;
     }
 
-    // ── ADD SCHEDULE ──────────────────────────────────────────────────────────
     if (isset($_POST['add_schedule'])) {
         $id_staff    = (int)($_POST['id_staff']    ?? 0);
         $hari        = mysqli_real_escape_string($conn, trim($_POST['hari']        ?? ''));
@@ -73,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['confirm_logout'])) {
         exit;
     }
 
-    // ── EDIT SCHEDULE ─────────────────────────────────────────────────────────
     if (isset($_POST['edit_schedule'])) {
         $id          = (int)$_POST['id_schedule'];
         $id_staff    = (int)($_POST['id_staff']    ?? 0);
@@ -96,11 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['confirm_logout'])) {
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 $filter_staff = isset($_GET['staff']) && $_GET['staff'] !== '' ? (int)$_GET['staff'] : null;
-
-// Default ke Senin jika tidak ada filter hari yang dikirim
-$filter_hari = isset($_GET['hari']) && $_GET['hari'] !== ''
-    ? trim($_GET['hari'])
-    : 'Senin';
+$filter_hari  = isset($_GET['hari'])  && $_GET['hari']  !== '' ? trim($_GET['hari'])  : 'Monday';
 
 $where_parts = ['1=1'];
 if ($filter_staff) $where_parts[] = "ss.id_staff = $filter_staff";
@@ -141,11 +133,7 @@ $stat_total_staff     = db_val($conn, "SELECT COUNT(DISTINCT id_staff) FROM staf
 $stat_active_staff    = db_val($conn, "SELECT COUNT(*) FROM staffs WHERE is_active=1");
 
 // ── Per-day count ─────────────────────────────────────────────────────────────
-$day_counts = db_rows($conn, "
-    SELECT hari, COUNT(*) AS cnt
-    FROM staff_schedules
-    GROUP BY hari
-");
+$day_counts = db_rows($conn, "SELECT hari, COUNT(*) AS cnt FROM staff_schedules GROUP BY hari");
 $day_map = [];
 foreach ($day_counts as $d) $day_map[$d['hari']] = $d['cnt'];
 
@@ -163,15 +151,14 @@ function pg_qs_sched($page, $filter_staff, $filter_hari) {
     ]));
 }
 
-// ── Day color map ─────────────────────────────────────────────────────────────
 $day_colors = [
-    'Senin'  => ['#3b82f6','#dbeafe','#1d4ed8'],
-    'Selasa' => ['#8b5cf6','#ede9fe','#6d28d9'],
-    'Rabu'   => ['#10b981','#d1fae5','#065f46'],
-    'Kamis'  => ['#f59e0b','#fef3c7','#92400e'],
-    'Jumat'  => ['#ef4444','#fee2e2','#991b1b'],
-    'Sabtu'  => ['#ec4899','#fce7f3','#9d174d'],
-    'Minggu' => ['#6b7280','#f3f4f6','#374151'],
+    'Monday'  => ['#3b82f6','#dbeafe','#1d4ed8'],
+    'Tuesday' => ['#8b5cf6','#ede9fe','#6d28d9'],
+    'Wednesday'   => ['#10b981','#d1fae5','#065f46'],
+    'Thursday'  => ['#f59e0b','#fef3c7','#92400e'],
+    'Friday'  => ['#ef4444','#fee2e2','#991b1b'],
+    'Saturday'  => ['#ec4899','#fce7f3','#9d174d'],
+    'Sunday' => ['#6b7280','#f3f4f6','#374151'],
 ];
 ?>
 <!DOCTYPE html>
@@ -188,111 +175,72 @@ $day_colors = [
 body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; margin:0; padding:0; }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
-.sidebar { width:260px; position:fixed; top:0; left:0; height:100vh; overflow-y:auto; z-index:1000; background-color:#2c3e50; color:#fff; box-shadow:4px 0 10px rgba(0,0,0,.05); }
+.sidebar {
+    width:260px; position:fixed; top:0; left:0;
+    height:100vh; overflow-y:auto; z-index:1050;
+    background-color:#2c3e50; color:#fff;
+    box-shadow:4px 0 10px rgba(0,0,0,.05);
+    transition:transform .3s ease;
+}
 .sidebar-brand { font-size:1.25rem; letter-spacing:1px; border-bottom:1px solid rgba(255,255,255,.1); }
 .sidebar a { color:#aeb6bf; text-decoration:none; padding:12px 20px; display:flex; align-items:center; border-radius:10px; margin-bottom:8px; transition:all .3s ease; font-weight:500; }
 .sidebar a:hover, .sidebar a.active { background-color:#3498db; color:#fff; transform:translateX(5px); }
 .sidebar a.logout-link:hover { background-color:rgba(231,76,60,.2); color:#e74c3c; transform:none; }
 
+/* ── Sidebar overlay ── */
+.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1040; }
+.sidebar-overlay.show { display:block; }
+
+/* ── Topbar (mobile only) ── */
+.topbar {
+    display:none;
+    position:sticky; top:0; z-index:1030;
+    background:#2c3e50; color:#fff;
+    padding:12px 16px;
+    align-items:center; justify-content:space-between;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.topbar-brand { font-size:1rem; font-weight:700; letter-spacing:.5px; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.btn-hamburger { background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:4px; display:flex; align-items:center; transition:opacity .2s; }
+.btn-hamburger:hover { opacity:.8; }
+
 /* ── Layout ───────────────────────────────────────────────────────────────── */
 .main-content { margin-left:260px; width:calc(100% - 260px); min-height:100vh; }
+
+/* ── Stats grid ── */
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
 
 /* ── Stat Cards ───────────────────────────────────────────────────────────── */
 .stat-card { border-radius:15px; border:none; transition:transform .3s ease,box-shadow .3s ease; cursor:default; }
 .stat-card:hover { transform:translateY(-5px); box-shadow:0 12px 20px rgba(0,0,0,.08)!important; }
-.icon-box { width:55px; height:55px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+.icon-box { border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 
 /* ── Day Pill Bar ─────────────────────────────────────────────────────────── */
 .day-pill-bar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    background: #fff;
-    border-radius: 16px;
-    padding: 14px 18px;
-    box-shadow: 0 2px 10px rgba(0,0,0,.04);
-    margin-bottom: 24px;
-    align-items: center;
+    display:flex; gap:8px; flex-wrap:wrap;
+    background:#fff; border-radius:16px; padding:14px 18px;
+    box-shadow:0 2px 10px rgba(0,0,0,.04); margin-bottom:24px; align-items:center;
 }
-.day-pill-bar-label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    color: #9ca3af;
-    margin-right: 4px;
-    white-space: nowrap;
-}
+.day-pill-bar-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#9ca3af; margin-right:4px; white-space:nowrap; }
 .day-pill {
-    background: #f1f5f9;
-    border: 2px solid transparent;
-    border-radius: 999px;
-    padding: 7px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #4b5563;
-    cursor: pointer;
-    transition: all .18s ease;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    line-height: 1;
+    background:#f1f5f9; border:2px solid transparent; border-radius:999px;
+    padding:7px 18px; font-size:13px; font-weight:600; color:#4b5563;
+    cursor:pointer; transition:all .18s ease; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:6px; line-height:1;
 }
-.day-pill:hover {
-    background: #e2e8f0;
-    transform: translateY(-1px);
-}
-.day-pill.active {
-    color: #fff;
-    border-color: transparent;
-    box-shadow: 0 4px 14px rgba(0,0,0,.18);
-    transform: translateY(-1px);
-}
-.day-pill .pill-count {
-    background: rgba(255,255,255,.25);
-    border-radius: 999px;
-    padding: 1px 7px;
-    font-size: 11px;
-    font-weight: 700;
-    min-width: 20px;
-    text-align: center;
-}
-.day-pill:not(.active) .pill-count {
-    background: rgba(0,0,0,.08);
-    color: #6b7280;
-}
-
-/* ── Toolbar ──────────────────────────────────────────────────────────────── */
-.toolbar { background:#fff; border-radius:14px; padding:18px 22px; box-shadow:0 2px 10px rgba(0,0,0,.04); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.toolbar .form-control, .toolbar .form-select { border-radius:10px; border:1.5px solid #e9ecef; font-size:13px; height:40px; }
-.toolbar .form-control:focus, .toolbar .form-select:focus { border-color:#3498db; box-shadow:0 0 0 3px rgba(52,152,219,.12); }
-.btn-filter { height:40px; border-radius:10px; font-size:13px; font-weight:600; padding:0 18px; display:inline-flex; align-items:center; gap:4px; }
+.day-pill:hover { background:#e2e8f0; transform:translateY(-1px); }
+.day-pill.active { color:#fff; border-color:transparent; box-shadow:0 4px 14px rgba(0,0,0,.18); transform:translateY(-1px); }
+.day-pill .pill-count { background:rgba(255,255,255,.25); border-radius:999px; padding:1px 7px; font-size:11px; font-weight:700; min-width:20px; text-align:center; }
+.day-pill:not(.active) .pill-count { background:rgba(0,0,0,.08); color:#6b7280; }
 
 /* ── Table card ───────────────────────────────────────────────────────────── */
 .table-card { background:#fff; border-radius:16px; box-shadow:0 5px 20px rgba(0,0,0,.04); overflow:hidden; }
-.table-card-header { padding:18px 24px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; }
-.table { table-layout:fixed; width:100%; }
+.table-card-header { padding:18px 24px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
 .table > thead > tr > th { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#6c757d; background:#f8f9fa; border-bottom:1px solid #e9ecef; padding:13px 20px; white-space:nowrap; }
 .table > tbody > tr > td { padding:13px 20px; vertical-align:middle; font-size:13.5px; border-bottom:1px solid #f5f5f5; }
 .table > tbody > tr:last-child > td { border-bottom:none; }
 .table > tbody > tr:hover > td { background:#f8f9fa; }
-
-/* ── Day header row ───────────────────────────────────────────────────────── */
-.day-header-row td {
-    padding: 10px 20px 8px !important;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e9ecef !important;
-}
-.day-header-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border-radius: 8px;
-    padding: 4px 14px;
-    font-size: 12px;
-    font-weight: 700;
-}
 
 /* ── Staff avatar ─────────────────────────────────────────────────────────── */
 .staff-avatar { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; flex-shrink:0; color:#fff; }
@@ -303,6 +251,15 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
 
 /* ── Duration chip ────────────────────────────────────────────────────────── */
 .duration-chip { display:inline-block; background:#e0f2fe; color:#0369a1; border-radius:6px; padding:2px 8px; font-size:11.5px; font-weight:600; }
+
+/* ── Active day indicator ─────────────────────────────────────────────────── */
+.active-day-indicator { display:inline-flex; align-items:center; gap:8px; border-radius:10px; padding:6px 16px; font-size:13px; font-weight:700; }
+
+/* ── Mobile schedule cards ────────────────────────────────────────────────── */
+.sched-mobile-card { background:#fff; border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,.05); border:1px solid #f0f0f0; }
+.sched-mobile-card .card-title  { font-size:14px; font-weight:600; color:#1a1a2e; margin-bottom:2px; }
+.sched-mobile-card .card-sub    { font-size:12px; color:#6c757d; margin-bottom:10px; }
+.sched-mobile-card .card-actions{ display:flex; gap:6px; flex-wrap:wrap; }
 
 /* ── Action buttons ───────────────────────────────────────────────────────── */
 .btn-action { padding:5px 12px; font-size:12px; border-radius:8px; font-weight:600; border:none; cursor:pointer; transition:opacity .2s; display:inline-flex; align-items:center; gap:4px; }
@@ -337,9 +294,9 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
 .time-inputs .sep { text-align:center; color:#9ca3af; font-size:13px; font-weight:600; padding-top:8px; }
 
 /* ── Confirm overlay ──────────────────────────────────────────────────────── */
-.confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; }
+.confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:16px; }
 .confirm-overlay.show { display:flex; }
-.confirm-modal { background:#fff; border-radius:20px; padding:36px 32px; width:400px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,.2); animation:modalIn .25s ease; }
+.confirm-modal { background:#fff; border-radius:20px; padding:36px 32px; width:400px; max-width:92vw; box-shadow:0 20px 60px rgba(0,0,0,.2); animation:modalIn .25s ease; }
 @keyframes modalIn { from{transform:scale(.9) translateY(10px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
 .confirm-modal .c-icon { width:60px; height:60px; border-radius:50%; background:rgba(220,38,38,.1); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:28px; color:#dc2626; }
 .confirm-modal h5 { text-align:center; font-weight:700; font-size:17px; margin-bottom:6px; }
@@ -353,66 +310,93 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
 .toast-notif { position:fixed; top:24px; right:24px; background:#16a34a; color:#fff; border-radius:12px; padding:14px 20px; font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; box-shadow:0 8px 24px rgba(0,0,0,.15); z-index:99999; opacity:0; transform:translateX(40px); transition:all .3s ease; pointer-events:none; }
 .toast-notif.show { opacity:1; transform:translateX(0); }
 
-/* ── Logout modal ────────────────────────────────────────────────────────── */
-.logout-icon-wrap {
-    width: 64px; height: 64px; border-radius: 18px;
-    background: rgba(231,76,60,.1);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 28px; color: #e74c3c;
-    margin: 0 auto 6px;
-}
-.logout-modal-error {
-    color: #dc3545;
-    font-size: 14px;
-    margin-top: 8px;
-    display: none;
-}
-.pw-wrapper {
-    position: relative;
-}
-.pw-toggle {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #6c757d;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-}
-.pw-toggle:hover {
-    color: #495057;
-}
+/* ── Logout modal ─────────────────────────────────────────────────────────── */
+.logout-icon-wrap { width:64px; height:64px; border-radius:18px; background:rgba(231,76,60,.1); display:flex; align-items:center; justify-content:center; font-size:28px; color:#e74c3c; margin:0 auto 6px; }
+.logout-modal-error { background:#fdecea; border:1.5px solid #f5c6c6; border-radius:10px; padding:10px 14px; font-size:13px; color:#922b21; display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.pw-wrapper { position:relative; }
+.pw-wrapper .form-control { padding-right:50px; }
+.pw-toggle { position:absolute; right:0; top:0; bottom:0; width:50px; border:none; background:none; display:flex; align-items:center; justify-content:center; color:#6c757d; cursor:pointer; font-size:16px; transition:color .2s; }
+.pw-toggle:hover { color:#495057; }
 
-/* ── Active day indicator in table header ─────────────────────────────────── */
-.active-day-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 10px;
-    padding: 6px 16px;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-@media (max-width:992px) {
+/* ════════════════════════════
+   RESPONSIVE
+════════════════════════════ */
+@media (max-width: 992px) {
     .sidebar { transform:translateX(-100%); }
     .sidebar.open { transform:translateX(0); }
     .main-content { margin-left:0; width:100%; }
-    .day-pill-bar { gap: 6px; padding: 12px 14px; }
-    .day-pill { padding: 6px 13px; font-size: 12px; }
+    .topbar { display:flex; }
 }
-@media (max-width:576px) {
-    .day-pill .pill-count { display: none; }
+
+@media (max-width: 768px) {
+    .main-content { padding:0 !important; }
+    .page-inner { padding:16px; }
+
+    /* Stats: 2 kolom */
+    .stats-grid { grid-template-columns:1fr 1fr; gap:10px; }
+
+    /* Day pill bar scrollable */
+    .day-pill-bar { flex-wrap:nowrap; overflow-x:auto; padding:12px 14px; gap:6px; border-radius:12px; }
+    .day-pill-bar::-webkit-scrollbar { height:0; }
+    .day-pill-bar-label { display:none; }
+    .day-pill { padding:6px 13px; font-size:12px; flex-shrink:0; }
+
+    /* Table card header stack */
+    .table-card-header { flex-direction:column; align-items:flex-start; gap:10px; padding:14px 16px; }
+    .table-card-header > div:last-child { width:100%; }
+    .table-card-header .form-select { flex:1; }
+    .table-card-header .btn { width:100%; justify-content:center; }
+
+    /* Desktop table hilang, mobile cards muncul */
+    .desktop-table { display:none !important; }
+    .mobile-cards  { display:block !important; }
+
+    .pagination-info { display:none; }
+}
+
+@media (min-width: 769px) {
+    .mobile-cards  { display:none !important; }
+    .desktop-table { display:block !important; }
+}
+
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns:1fr 1fr; gap:8px; }
+    .page-inner { padding:12px; }
+    .stat-card .card-body { padding:12px; }
+    .stat-card h3 { font-size:1.3rem !important; }
+    .confirm-modal { padding:28px 20px; }
 }
 </style>
 </head>
 <body>
 
+<!-- ═══ SIDEBAR OVERLAY ════════════════════════════════════════════════════ -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ═══ TOPBAR (mobile only) ═══════════════════════════════════════════════ -->
+<div class="topbar" id="topbar">
+    <button class="btn-hamburger" onclick="openSidebar()" aria-label="Open menu">
+        <i class="bi bi-list"></i>
+    </button>
+    <span class="topbar-brand">CatDogKu Admin</span>
+    <div class="topbar-right">
+        <a href="admin_reserve.php?status=pending" class="position-relative text-decoration-none" style="color:#fff">
+            <i class="bi bi-bell fs-5"></i>
+            <?php if($pending > 0): ?>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px"><?= $pending ?></span>
+            <?php endif; ?>
+        </a>
+    </div>
+</div>
+
 <!-- ═══════════════════════════ SIDEBAR ════════════════════════════════════ -->
 <div class="sidebar p-3" id="sidebar">
+    <div class="d-flex align-items-center justify-content-between mb-2 d-lg-none">
+        <span style="font-size:.9rem;font-weight:600;color:rgba(255,255,255,.6);">Menu</span>
+        <button class="btn-hamburger" onclick="closeSidebar()" style="font-size:1.2rem">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
     <div class="sidebar-brand text-center py-3 mb-4 fw-bold text-white">CatDogKu Admin</div>
 
     <a href="admin_dash.php" class="<?= $current_page_file==='admin_dash.php'?'active':'' ?>">
@@ -448,7 +432,6 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
     </a>
 
     <div class="mt-4 pt-3 border-top border-secondary">
-        <!-- Logout: trigger modal, bukan href langsung -->
         <a href="#" class="logout-link fw-bold" onclick="openLogoutModal(); return false;">
             <i class="bi bi-box-arrow-left me-2 fs-5"></i> Logout
         </a>
@@ -457,12 +440,12 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
 
 <!-- ═══════════════════════════ MAIN CONTENT ═══════════════════════════════ -->
 <div class="main-content p-4 p-md-5">
+<div class="page-inner">
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
+    <!-- Header desktop -->
+    <div class="d-none d-lg-flex justify-content-between align-items-center mb-5">
         <div>
             <h2 class="fw-bold text-dark mb-0">Staff Schedules</h2>
-            <p class="text-muted mb-0" style="font-size:13px">Manage weekly work schedules for all staff</p>
         </div>
         <a href="admin_reserve.php?status=pending" class="position-relative text-decoration-none text-secondary">
             <i class="bi bi-bell fs-5"></i>
@@ -472,47 +455,46 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
         </a>
     </div>
 
+    <!-- Header mobile -->
+    <div class="d-lg-none mb-3">
+        <h4 class="fw-bold text-dark mb-0">Staff Schedules</h4>
+    </div>
+
     <!-- ── Stat Cards ─────────────────────────────────────────────────────── -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-4 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Total Schedules</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($stat_total_schedules) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px">All shift entries</p>
-                    </div>
-                    <div class="icon-box bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-calendar-week"></i>
-                    </div>
+    <div class="stats-grid">
+        <div class="card stat-card shadow-sm p-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted fw-semibold mb-1" style="font-size:12px">Total Schedules</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="font-size:1.5rem"><?= number_format($stat_total_schedules) ?></h3>
+                    <p class="text-muted mb-0 d-none d-sm-block" style="font-size:11px">All shift entries</p>
+                </div>
+                <div class="icon-box bg-primary bg-opacity-10 text-primary" style="width:46px;height:46px;font-size:22px">
+                    <i class="bi bi-calendar-week"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Staff Scheduled</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($stat_total_staff) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px">Unique staff with shifts</p>
-                    </div>
-                    <div class="icon-box bg-success bg-opacity-10 text-success">
-                        <i class="bi bi-person-check"></i>
-                    </div>
+        <div class="card stat-card shadow-sm p-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted fw-semibold mb-1" style="font-size:12px">Scheduled</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="font-size:1.5rem"><?= number_format($stat_total_staff) ?></h3>
+                    <p class="text-muted mb-0 d-none d-sm-block" style="font-size:11px">Staff with shifts</p>
+                </div>
+                <div class="icon-box bg-success bg-opacity-10 text-success" style="width:46px;height:46px;font-size:22px">
+                    <i class="bi bi-person-check"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 col-sm-6">
-            <div class="card stat-card shadow-sm h-100 p-2">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted fw-semibold mb-1" style="font-size:13px">Active Staff</p>
-                        <h3 class="fw-bold mb-0 text-dark"><?= number_format($stat_active_staff) ?></h3>
-                        <p class="text-muted mb-0" style="font-size:12px">Currently active staff</p>
-                    </div>
-                    <div class="icon-box bg-warning bg-opacity-10" style="color:#d97706">
-                        <i class="bi bi-people"></i>
-                    </div>
+        <div class="card stat-card shadow-sm p-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted fw-semibold mb-1" style="font-size:12px">Active Staff</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="font-size:1.5rem"><?= number_format($stat_active_staff) ?></h3>
+                    <p class="text-muted mb-0 d-none d-sm-block" style="font-size:11px">Currently active</p>
+                </div>
+                <div class="icon-box bg-warning bg-opacity-10" style="color:#d97706;width:46px;height:46px;font-size:22px">
+                    <i class="bi bi-people"></i>
                 </div>
             </div>
         </div>
@@ -520,7 +502,7 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
 
     <!-- ── Day Filter Pills ────────────────────────────────────────────────── -->
     <form method="GET" action="admin_staffschedule.php" id="filterForm">
-        <input type="hidden" name="hari" id="hari-hidden" value="<?= htmlspecialchars($filter_hari) ?>">
+        <input type="hidden" name="hari"  id="hari-hidden"  value="<?= htmlspecialchars($filter_hari) ?>">
         <input type="hidden" name="staff" id="staff-hidden" value="<?= htmlspecialchars($filter_staff ?? '') ?>">
 
         <div class="day-pill-bar">
@@ -541,43 +523,35 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
             <?php endforeach; ?>
 
             <?php if($filter_staff): ?>
-                <span class="ms-2 badge bg-light text-secondary border" style="font-size:12px;padding:7px 12px;border-radius:8px;font-weight:600">
+                <span class="ms-2 badge bg-light text-secondary border" style="font-size:12px;padding:7px 12px;border-radius:8px;font-weight:600;flex-shrink:0">
                     <i class="bi bi-person me-1"></i>
-                    <?php
-                    foreach($all_staff as $st) {
-                        if ((int)$st['id_staff'] === $filter_staff) {
-                            echo htmlspecialchars($st['nama_staff']);
-                            break;
-                        }
-                    }
-                    ?>
+                    <?php foreach($all_staff as $st) { if ((int)$st['id_staff'] === $filter_staff) { echo htmlspecialchars($st['nama_staff']); break; } } ?>
                     <a href="?hari=<?= urlencode($filter_hari) ?>" class="text-secondary ms-1" style="text-decoration:none">&times;</a>
                 </span>
             <?php endif; ?>
         </div>
     </form>
 
-    <!-- ── Schedules Table ─────────────────────────────────────────────────── -->
+    <!-- ── Table card ─────────────────────────────────────────────────────── -->
     <div class="table-card mb-4">
         <div class="table-card-header">
-            <div class="d-flex align-items-center gap-3">
-                <?php
-                [$dc, $db, $dd] = $day_colors[$filter_hari];
-                ?>
+            <!-- Left: day indicator + title -->
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <?php [$dc, $db, $dd] = $day_colors[$filter_hari]; ?>
                 <span class="active-day-indicator" style="background:<?= $db ?>;color:<?= $dc ?>">
                     <i class="bi bi-calendar2-check"></i>
                     <?= htmlspecialchars($filter_hari) ?>
                 </span>
                 <h5 class="fw-bold mb-0" style="font-size:15px">
-                    Jadwal Staff
+                    Staff Schedules
                     <span class="badge bg-primary bg-opacity-10 text-primary ms-1" style="font-size:12px"><?= number_format($total_rows) ?></span>
                 </h5>
             </div>
-            <div class="d-flex align-items-center gap-3">
-                <!-- Staff filter dropdown -->
-                <form method="GET" action="admin_staffschedule.php" class="d-flex align-items-center gap-2">
+            <!-- Right: staff filter + add button -->
+            <div class="d-flex align-items-center gap-2 flex-wrap" style="width:100%;max-width:420px">
+                <form method="GET" action="admin_staffschedule.php" class="d-flex align-items-center gap-2 flex-grow-1">
                     <input type="hidden" name="hari" value="<?= htmlspecialchars($filter_hari) ?>">
-                    <select name="staff" class="form-select form-select-sm" style="border-radius:9px;font-size:13px;min-width:160px;border:1.5px solid #e9ecef" onchange="this.form.submit()">
+                    <select name="staff" class="form-select form-select-sm" style="border-radius:9px;font-size:13px;border:1.5px solid #e9ecef;flex:1" onchange="this.form.submit()">
                         <option value="">All Staff</option>
                         <?php foreach($all_staff as $st): ?>
                             <option value="<?= $st['id_staff'] ?>" <?= $filter_staff===(int)$st['id_staff']?'selected':'' ?>>
@@ -586,17 +560,18 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
                         <?php endforeach; ?>
                     </select>
                 </form>
-                <span class="text-muted" style="font-size:13px;white-space:nowrap">Hal <?= $current_pg ?>/<?= $total_pages ?></span>
+                <span class="text-muted pagination-info" style="font-size:13px;white-space:nowrap">Hal <?= $current_pg ?>/<?= $total_pages ?></span>
                 <button class="btn btn-primary btn-sm"
-                        style="border-radius:9px;font-size:13px;font-weight:600;padding:6px 16px;display:inline-flex;align-items:center;gap:5px"
+                        style="border-radius:9px;font-size:13px;font-weight:600;padding:6px 16px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap"
                         onclick="openAddSchedule()">
                     <i class="bi bi-plus-lg"></i> Add Schedule
                 </button>
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table mb-0">
+        <!-- DESKTOP TABLE -->
+        <div class="table-responsive desktop-table">
+            <table class="table mb-0" style="table-layout:fixed;width:100%">
                 <thead>
                     <tr>
                         <th style="width:5%">#</th>
@@ -654,10 +629,10 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
                         <td>
                             <div class="d-flex gap-1 flex-wrap">
                                 <button class="btn-action btn-view" onclick="openDetail(<?= htmlspecialchars(json_encode(array_merge($sc, [
-                                    'dur_str' => trim($dur_str),
+                                    'dur_str'         => trim($dur_str),
                                     'jam_mulai_fmt'   => date('H:i', strtotime($sc['jam_mulai'])),
                                     'jam_selesai_fmt' => date('H:i', strtotime($sc['jam_selesai'])),
-                                    'av_color' => $av_color,
+                                    'av_color'        => $av_color,
                                 ])), ENT_QUOTES) ?>)">
                                     <i class="bi bi-eye-fill"></i> Detail
                                 </button>
@@ -675,10 +650,71 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
             </table>
         </div>
 
+        <!-- MOBILE CARDS -->
+        <div class="mobile-cards p-3">
+            <?php if(empty($schedules)): ?>
+                <div class="text-center text-muted py-4">
+                    <?php [$dc,$db] = $day_colors[$filter_hari]; ?>
+                    <div style="width:56px;height:56px;border-radius:50%;background:<?= $db ?>;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px;color:<?= $dc ?>">
+                        <i class="bi bi-calendar-x"></i>
+                    </div>
+                    <div class="fw-semibold" style="font-size:14px;color:#374151">Tidak ada jadwal untuk <?= htmlspecialchars($filter_hari) ?></div>
+                    <div class="text-muted mt-1" style="font-size:12px">Klik "Add Schedule" untuk menambah</div>
+                </div>
+            <?php else:
+                $avatar_colors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16'];
+                foreach ($schedules as $i => $sc):
+                    $av_color = $avatar_colors[$sc['id_staff'] % count($avatar_colors)];
+                    $initials  = strtoupper(substr($sc['nama_staff'] ?? 'S', 0, 1));
+                    $t1 = strtotime($sc['jam_mulai']);
+                    $t2 = strtotime($sc['jam_selesai']);
+                    $dur_min = $t2 > $t1 ? round(($t2 - $t1) / 60) : 0;
+                    $dur_str = $dur_min >= 60 ? floor($dur_min/60) . 'h ' . ($dur_min%60>0?($dur_min%60).'m':'') : $dur_min . 'm';
+            ?>
+            <div class="sched-mobile-card">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="staff-avatar" style="background:<?= $av_color ?>;width:42px;height:42px;border-radius:10px;font-size:15px;flex-shrink:0">
+                        <?= $initials ?>
+                    </div>
+                    <div style="min-width:0;flex:1">
+                        <div class="card-title"><?= htmlspecialchars($sc['nama_staff'] ?? '—') ?></div>
+                        <div class="card-sub">
+                            <?= htmlspecialchars($sc['jabatan'] ?? '') ?>
+                            <?php if($sc['nama_specialization']): ?> · <span style="color:#6d28d9"><?= htmlspecialchars($sc['nama_specialization']) ?></span><?php endif; ?>
+                        </div>
+                    </div>
+                    <!-- Time + duration on the right -->
+                    <div class="text-end flex-shrink-0">
+                        <div class="time-range" style="font-size:11.5px;padding:4px 8px">
+                            <?= date('H:i', strtotime($sc['jam_mulai'])) ?> → <?= date('H:i', strtotime($sc['jam_selesai'])) ?>
+                        </div>
+                        <div class="mt-1"><span class="duration-chip" style="font-size:10.5px"><?= trim($dur_str) ?></span></div>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-action btn-view" onclick="openDetail(<?= htmlspecialchars(json_encode(array_merge($sc, [
+                        'dur_str'         => trim($dur_str),
+                        'jam_mulai_fmt'   => date('H:i', strtotime($sc['jam_mulai'])),
+                        'jam_selesai_fmt' => date('H:i', strtotime($sc['jam_selesai'])),
+                        'av_color'        => $av_color,
+                    ])), ENT_QUOTES) ?>)">
+                        <i class="bi bi-eye-fill"></i> Detail
+                    </button>
+                    <button class="btn-action btn-edit" onclick="openEdit(<?= htmlspecialchars(json_encode($sc), ENT_QUOTES) ?>)">
+                        <i class="bi bi-pencil-fill"></i> Edit
+                    </button>
+                    <button class="btn-action btn-delete" onclick="openDelete(<?= $sc['id_schedule'] ?>, '<?= addslashes(htmlspecialchars($sc['nama_staff']??'')) ?>', '<?= addslashes(htmlspecialchars($sc['hari']??'')) ?>')">
+                        <i class="bi bi-trash-fill"></i> Hapus
+                    </button>
+                </div>
+            </div>
+            <?php endforeach; endif; ?>
+        </div>
+
         <!-- Pagination -->
         <?php if($total_pages > 1): ?>
-        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top" style="background:#fafafa">
-            <span class="text-muted" style="font-size:13px">
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top" style="background:#fafafa;flex-wrap:wrap;gap:8px">
+            <span class="text-muted pagination-info" style="font-size:13px">
                 Showing <?= ($offset+1) ?>–<?= min($offset+$per_page, $total_rows) ?> of <?= $total_rows ?>
             </span>
             <nav>
@@ -710,6 +746,7 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
         <?php endif; ?>
     </div><!-- /table-card -->
 
+</div><!-- /page-inner -->
 </div><!-- /main-content -->
 
 
@@ -719,7 +756,7 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
         <div class="modal-content">
             <div class="modal-header">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="staff-avatar" id="d-avatar" style="width:48px;height:48px;font-size:18px;font-weight:700;border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"></div>
+                    <div class="staff-avatar" id="d-avatar" style="width:48px;height:48px;font-size:18px;border-radius:12px"></div>
                     <div>
                         <h5 class="modal-title fw-bold mb-0" id="d-name"></h5>
                         <p class="text-muted mb-0" id="d-sub" style="font-size:13px"></p>
@@ -797,12 +834,12 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
                         <label class="form-label">Work Hours <span class="text-danger">*</span></label>
                         <div class="time-inputs">
                             <div>
-                                <input type="time" name="jam_mulai" class="form-control" required placeholder="Start">
+                                <input type="time" name="jam_mulai" class="form-control" required>
                                 <div class="form-text">Start time</div>
                             </div>
                             <div class="sep">→</div>
                             <div>
-                                <input type="time" name="jam_selesai" class="form-control" required placeholder="End">
+                                <input type="time" name="jam_selesai" class="form-control" required>
                                 <div class="form-text">End time</div>
                             </div>
                         </div>
@@ -893,6 +930,58 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
     </div>
 </div>
 
+<!-- ════════════════ LOGOUT MODAL ════════════════════════════════════════════ -->
+<div class="modal fade form-modal" id="logoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="clearLogoutForm()"></button>
+            </div>
+            <form method="POST" action="admin_staffschedule.php" id="logoutForm">
+                <input type="hidden" name="confirm_logout" value="1">
+                <div class="modal-body pt-2">
+                    <div class="text-center mb-4">
+                        <div class="logout-icon-wrap"><i class="bi bi-box-arrow-left"></i></div>
+                        <h5 class="fw-bold mt-3 mb-1" style="font-size:16px;color:#1a1a2e">Log Out Confirmation</h5>
+                        <p class="text-muted mb-0" style="font-size:13px">Enter your password to log out of this session.</p>
+                    </div>
+                    <?php if(!empty($logout_error)): ?>
+                    <div class="logout-modal-error">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <?= htmlspecialchars($logout_error) ?>
+                    </div>
+                    <?php endif; ?>
+                    <div class="logout-modal-error" id="logout-js-error" style="display:none">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span id="logout-js-error-msg">Password is required.</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password <span class="text-danger">*</span></label>
+                        <div class="pw-wrapper">
+                            <input type="password" name="logout_password" id="logout-pw"
+                                   class="form-control" placeholder="Enter your password" required
+                                   autocomplete="current-password">
+                            <button type="button" class="pw-toggle" onclick="togglePwVisibility()">
+                                <i class="bi bi-eye" id="pw-toggle-icon"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Confirm your identity before logging out.</div>
+                    </div>
+                    <hr style="border-color:#f0f0f0;margin:18px 0 16px">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger fw-bold"
+                                style="border-radius:10px;font-size:13.5px;padding:10px"
+                                onclick="return validateLogout()">Yes, Logout</button>
+                        <button type="button" class="btn btn-light fw-semibold"
+                                style="border-radius:10px;font-size:13px;padding:9px;color:#6c757d"
+                                data-bs-dismiss="modal" onclick="clearLogoutForm()">Cancel</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- ════════════════ TOAST ════════════════════════════════════════════════════ -->
 <div class="toast-notif" id="toastNotif">
     <i class="bi bi-check-circle-fill"></i>
@@ -901,13 +990,25 @@ body { background-color:#f4f7f6; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sa
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ── Day pill filter — selalu ada hari aktif, tidak bisa deselect ─────────────
+/* ── Sidebar mobile ──────────────────────────────────────────────────────── */
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+/* ── Day pill filter ─────────────────────────────────────────────────────── */
 function filterByDay(day) {
     document.getElementById('hari-hidden').value = day;
     document.getElementById('filterForm').submit();
 }
 
-// ── Detail row helper ────────────────────────────────────────────────────────
+/* ── Detail row helper ───────────────────────────────────────────────────── */
 function dRow(label, value) {
     return `<div class="detail-row">
         <span class="detail-label">${label}</span>
@@ -915,26 +1016,26 @@ function dRow(label, value) {
     </div>`;
 }
 
-// ── Current schedule for edit shortcut ──────────────────────────────────────
+/* ── Detail Modal ────────────────────────────────────────────────────────── */
 let _currentSc = null;
 
 function openDetail(sc) {
     _currentSc = sc;
-    document.getElementById('d-avatar').textContent  = (sc.nama_staff || 'S').charAt(0).toUpperCase();
-    document.getElementById('d-avatar').style.background = sc.av_color || '#3b82f6';
-    document.getElementById('d-name').textContent    = sc.nama_staff || '—';
-    document.getElementById('d-sub').textContent     = [sc.jabatan, sc.nama_specialization].filter(Boolean).join(' · ') || 'Staff';
-    document.getElementById('d-day').textContent     = sc.hari || '—';
-    document.getElementById('d-time').textContent    = sc.jam_mulai_fmt + ' – ' + sc.jam_selesai_fmt;
-    document.getElementById('d-dur').textContent     = sc.dur_str || '—';
+    document.getElementById('d-avatar').textContent       = (sc.nama_staff || 'S').charAt(0).toUpperCase();
+    document.getElementById('d-avatar').style.background  = sc.av_color || '#3b82f6';
+    document.getElementById('d-name').textContent         = sc.nama_staff || '—';
+    document.getElementById('d-sub').textContent          = [sc.jabatan, sc.nama_specialization].filter(Boolean).join(' · ') || 'Staff';
+    document.getElementById('d-day').textContent          = sc.hari || '—';
+    document.getElementById('d-time').textContent         = sc.jam_mulai_fmt + ' – ' + sc.jam_selesai_fmt;
+    document.getElementById('d-dur').textContent          = sc.dur_str || '—';
     document.getElementById('d-info').innerHTML =
-        dRow('Staff Name',      sc.nama_staff) +
-        dRow('Position',        sc.jabatan || '—') +
-        dRow('Specialization',  sc.nama_specialization || '—') +
-        dRow('Day',             sc.hari) +
-        dRow('Start Time',      sc.jam_mulai_fmt) +
-        dRow('End Time',        sc.jam_selesai_fmt) +
-        dRow('Duration',        sc.dur_str);
+        dRow('Staff Name',     sc.nama_staff) +
+        dRow('Position',       sc.jabatan || '—') +
+        dRow('Specialization', sc.nama_specialization || '—') +
+        dRow('Day',            sc.hari) +
+        dRow('Start Time',     sc.jam_mulai_fmt) +
+        dRow('End Time',       sc.jam_selesai_fmt) +
+        dRow('Duration',       sc.dur_str);
     new bootstrap.Modal(document.getElementById('detailModal')).show();
 }
 
@@ -943,12 +1044,12 @@ function switchDetailToEdit() {
     setTimeout(() => openEdit(_currentSc), 300);
 }
 
-// ── Add Schedule ─────────────────────────────────────────────────────────────
+/* ── Add Schedule ────────────────────────────────────────────────────────── */
 function openAddSchedule() {
     new bootstrap.Modal(document.getElementById('addModal')).show();
 }
 
-// ── Edit Schedule ─────────────────────────────────────────────────────────────
+/* ── Edit Schedule ───────────────────────────────────────────────────────── */
 function openEdit(sc) {
     document.getElementById('edit-id').value      = sc.id_schedule;
     document.getElementById('edit-staff').value   = sc.id_staff;
@@ -958,7 +1059,7 @@ function openEdit(sc) {
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 
-// ── Delete ───────────────────────────────────────────────────────────────────
+/* ── Delete ──────────────────────────────────────────────────────────────── */
 function openDelete(id, staff, hari) {
     document.getElementById('delete-id').value = id;
     document.getElementById('delete-msg').textContent =
@@ -972,136 +1073,47 @@ document.getElementById('deleteOverlay').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeDelete();
 });
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+/* ── Toast ───────────────────────────────────────────────────────────────── */
 function showToast(msg) {
     const t = document.getElementById('toastNotif');
     document.getElementById('toastMsg').textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
 }
-</script>
 
-<!-- ══════════════════ LOGOUT CONFIRMATION MODAL ══════════════════════════ -->
-<div class="modal fade form-modal" id="logoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        onclick="clearLogoutForm()"></button>
-            </div>
-            <form method="POST" action="admin_staffschedule.php" id="logoutForm">
-                <input type="hidden" name="confirm_logout" value="1">
-                <div class="modal-body pt-2">
-
-                    <!-- Icon + judul -->
-                    <div class="text-center mb-4">
-                        <div class="logout-icon-wrap">
-                            <i class="bi bi-box-arrow-left"></i>
-                        </div>
-                        <h5 class="fw-bold mt-3 mb-1" style="font-size:16px;color:#1a1a2e">Log Out Confirmation</h5>
-                        <p class="text-muted mb-0" style="font-size:13px">
-                            Enter your password to log out of this session.
-                        </p>
-                    </div>
-
-                    <!-- Error message (tampil jika password salah dari PHP) -->
-                    <?php if(!empty($logout_error)): ?>
-                    <div class="logout-modal-error">
-                        <i class="bi bi-exclamation-circle-fill"></i>
-                        <?= htmlspecialchars($logout_error) ?>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- Error JS (salah pw tanpa reload) -->
-                    <div class="logout-modal-error" id="logout-js-error" style="display:none">
-                        <i class="bi bi-exclamation-circle-fill"></i>
-                        <span id="logout-js-error-msg">Password is required.</span>
-                    </div>
-
-                    <!-- Password field -->
-                    <div class="mb-3">
-                        <label class="form-label">Password <span class="text-danger">*</span></label>
-                        <div class="pw-wrapper">
-                            <input type="password" name="logout_password" id="logout-pw"
-                                   class="form-control" placeholder="Enter your password" required
-                                   autocomplete="current-password">
-                            <button type="button" class="pw-toggle" id="pw-toggle-btn"
-                                    onclick="togglePwVisibility()">
-                                <i class="bi bi-eye" id="pw-toggle-icon"></i>
-                            </button>
-                        </div>
-                        <div class="form-text">Confirm your identity before logging out.</div>
-                    </div>
-
-                    <!-- Divider tipis -->
-                    <hr style="border-color:#f0f0f0;margin:18px 0 16px">
-
-                    <!-- Buttons -->
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-danger fw-bold"
-                                style="border-radius:10px;font-size:13.5px;padding:10px"
-                                onclick="return validateLogout()">
-                                Yes, Logout
-                        </button>
-                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal"
-                                style="border-radius:8px;font-size:13px" onclick="clearLogoutForm()">
-                            Close
-                        </button>
-                    </div>
-
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-// ── Logout Modal ──────────────────────────────────────────────────────────────
+/* ── Logout ──────────────────────────────────────────────────────────────── */
 function openLogoutModal() {
     clearLogoutForm();
     new bootstrap.Modal(document.getElementById('logoutModal')).show();
-    // Fokus ke input password setelah modal terbuka
     document.getElementById('logoutModal').addEventListener('shown.bs.modal', function onShown() {
         document.getElementById('logout-pw').focus();
         this.removeEventListener('shown.bs.modal', onShown);
     });
 }
-
 function clearLogoutForm() {
     document.getElementById('logout-pw').value = '';
     document.getElementById('logout-js-error').style.display = 'none';
-    // Reset icon show/hide
     document.getElementById('logout-pw').type = 'password';
     document.getElementById('pw-toggle-icon').className = 'bi bi-eye';
 }
-
 function validateLogout() {
     const pw  = document.getElementById('logout-pw').value.trim();
     const err = document.getElementById('logout-js-error');
-    const msg = document.getElementById('logout-js-error-msg');
     if (pw === '') {
-        msg.textContent = 'Password tidak boleh kosong.';
+        document.getElementById('logout-js-error-msg').textContent = 'Password tidak boleh kosong.';
         err.style.display = 'flex';
         document.getElementById('logout-pw').focus();
         return false;
     }
     err.style.display = 'none';
-    return true; // lanjut submit
+    return true;
 }
-
 function togglePwVisibility() {
     const input = document.getElementById('logout-pw');
     const icon  = document.getElementById('pw-toggle-icon');
-    if (input.type === 'password') {
-        input.type       = 'text';
-        icon.className   = 'bi bi-eye-slash';
-    } else {
-        input.type       = 'password';
-        icon.className   = 'bi bi-eye';
-    }
+    if (input.type === 'password') { input.type = 'text';     icon.className = 'bi bi-eye-slash'; }
+    else                           { input.type = 'password'; icon.className = 'bi bi-eye'; }
 }
-
-// Buka logout modal otomatis jika ada error password dari PHP
 <?php if(!empty($logout_error)): ?>
     window.addEventListener('DOMContentLoaded', () => {
         new bootstrap.Modal(document.getElementById('logoutModal')).show();
